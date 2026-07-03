@@ -399,13 +399,6 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
     return { activeProgram: active || null, futurePrograms: future.slice(0, 5) };
   }, [epgPrograms, nowMillis]);
 
-  const formatHeaderDateTime = (timeMs: number): string => {
-    const date = new Date(timeMs);
-    const days = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
-    const dayName = days[date.getDay()];
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${dayName}, ${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}  ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  };
 
   const formatTimeRange = (startStr: string, stopStr: string): string => {
     try {
@@ -438,7 +431,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
           justifyContent: "space-between",
           alignItems: "center",
           height: "64px",
-          padding: "0 24px",
+          padding: isMobile ? "0 12px" : "0 24px",
           backgroundColor: "var(--color-surface)",
           borderBottom: "1px solid var(--color-border)",
         }}
@@ -451,7 +444,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
         </div>
 
         {/* Search & Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "10px" : "20px" }}>
           <div style={{ position: "relative" }}>
             <Search
               size={16}
@@ -465,7 +458,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
             />
             <input
               type="text"
-              placeholder="Tìm kiếm kênh..."
+              placeholder="Tìm kênh..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -476,7 +469,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                 color: "white",
                 fontSize: "13px",
                 outline: "none",
-                width: "220px",
+                width: isMobile ? "130px" : "220px",
                 transition: "border-color 0.2s",
               }}
               onFocus={(e) => (e.target.style.borderColor = "var(--color-accent-blue)")}
@@ -486,6 +479,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
 
           <button
             onClick={onOpenSettings}
+            title="Thiết lập"
             style={{
               background: "none",
               border: "none",
@@ -496,18 +490,14 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
               gap: "6px",
               fontSize: "13px",
               fontWeight: 500,
-              padding: "8px 16px",
+              padding: isMobile ? "8px" : "8px 16px",
               borderRadius: "18px",
               backgroundColor: "rgba(255,255,255,0.05)",
             }}
           >
             <Settings size={16} />
-            Thiết lập
+            {!isMobile && "Thiết lập"}
           </button>
-
-          <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
-            {formatHeaderDateTime(nowMillis)}
-          </span>
         </div>
       </div>
 
@@ -846,7 +836,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
             </div>
 
             {/* Bottom Channels Grid */}
-            <div style={{ flex: 1, padding: "24px", overflowY: "auto" }}>
+            <div style={{ flex: 1, padding: isMobile ? "12px" : "24px", overflowY: "auto" }}>
               {displayedChannels.length > 0 ? (
                 <div className="tv-grid">
                   {displayedChannels.map((chan) => {
@@ -861,12 +851,12 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                         style={{
                           position: "relative",
                           borderRadius: "12px",
-                          padding: "16px",
+                          padding: isMobile ? "10px" : "16px",
                           cursor: "pointer",
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "center",
-                          gap: "12px",
+                          gap: isMobile ? "8px" : "12px",
                           border: isFocused ? "2px solid var(--color-accent-blue)" : "1px solid var(--color-border)",
                           boxShadow: isFocused ? "0 0 15px rgba(138, 180, 248, 0.25)" : "none",
                           transform: isFocused ? "translateY(-4px)" : "none",
@@ -899,14 +889,14 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
 
                         <div
                           style={{
-                            width: "72px",
-                            height: "72px",
+                            width: isMobile ? "54px" : "72px",
+                            height: isMobile ? "54px" : "72px",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             borderRadius: "8px",
                             backgroundColor: "rgba(255,255,255,0.03)",
-                            padding: "6px",
+                            padding: isMobile ? "4px" : "6px",
                           }}
                         >
                           {chan.logoUrl ? (
@@ -916,7 +906,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                               style={{ width: "100%", height: "100%", objectFit: "contain" }}
                             />
                           ) : (
-                            <Tv size={28} style={{ color: "var(--color-muted)" }} />
+                            <Tv size={isMobile ? 22 : 28} style={{ color: "var(--color-muted)" }} />
                           )}
                         </div>
 
