@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import type { Channel, EPGProgram } from "../types";
 import { MonTVRepository } from "../services/repository";
-import { ArrowLeft, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw, List, X, Search, Tv } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw, List, X, Search, Tv } from "lucide-react";
 
 interface PlayerScreenProps {
   initialChannel: Channel;
@@ -817,15 +817,16 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               {prevChannel && (
                 <button
                   onClick={() => switchChannel("prev")}
+                  title={`Kênh trước: ${prevChannel.name}`}
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
+                    gap: "8px",
                     background: "none",
                     border: "1px solid var(--color-border)",
                     color: "white",
                     cursor: "pointer",
-                    padding: isMobile ? "8px 12px" : "8px 16px",
+                    padding: "8px 16px",
                     borderRadius: "20px",
                     backgroundColor: "rgba(255, 255, 255, 0.05)",
                     transition: "all 0.2s",
@@ -843,9 +844,6 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                   ) : (
                     <Tv size={16} />
                   )}
-                  <span style={{ fontSize: "13px", fontWeight: 500 }}>
-                    {!isMobile && "Kênh trước: "}{prevChannel.name}
-                  </span>
                 </button>
               )}
 
@@ -883,15 +881,16 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               {nextChannel && (
                 <button
                   onClick={() => switchChannel("next")}
+                  title={`Kênh sau: ${nextChannel.name}`}
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
+                    gap: "8px",
                     background: "none",
                     border: "1px solid var(--color-border)",
                     color: "white",
                     cursor: "pointer",
-                    padding: isMobile ? "8px 12px" : "8px 16px",
+                    padding: "8px 16px",
                     borderRadius: "20px",
                     backgroundColor: "rgba(255, 255, 255, 0.05)",
                     transition: "all 0.2s",
@@ -899,9 +898,6 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)"}
                 >
-                  <span style={{ fontSize: "13px", fontWeight: 500 }}>
-                    {!isMobile && "Kênh sau: "}{nextChannel.name}
-                  </span>
                   {nextChannel.logoUrl ? (
                     <img
                       src={nextChannel.logoUrl}
@@ -911,9 +907,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                   ) : (
                     <Tv size={16} />
                   )}
-                  <span style={{ transform: "rotate(180deg)", display: "inline-block" }}>
-                    <ArrowLeft size={16} />
-                  </span>
+                  <ArrowRight size={16} />
                 </button>
               )}
             </div>
