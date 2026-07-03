@@ -986,13 +986,13 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                         className="glass-card"
                         style={{
                           position: "relative",
-                          borderRadius: "12px",
-                          padding: isMobile ? "10px" : "12px",
+                          borderRadius: "8px",
+                          padding: isMobile ? "6px 4px" : "12px",
                           cursor: "pointer",
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "center",
-                          gap: isMobile ? "6px" : "8px",
+                          gap: isMobile ? "4px" : "8px",
                           border: isFocused ? "2px solid var(--color-accent-blue)" : "1px solid var(--color-border)",
                           boxShadow: isFocused ? "0 0 15px rgba(138, 180, 248, 0.25)" : "none",
                           transform: isFocused ? "translateY(-4px)" : "none",
@@ -1003,21 +1003,22 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                           onClick={(e) => toggleFavorite(e, chan.id)}
                           style={{
                             position: "absolute",
-                            top: "8px",
-                            right: "8px",
+                            top: isMobile ? "4px" : "8px",
+                            right: isMobile ? "4px" : "8px",
                             background: "none",
                             border: "none",
                             cursor: "pointer",
-                            padding: "4px",
+                            padding: isMobile ? "3px" : "4px",
                             borderRadius: "50%",
-                            backgroundColor: "rgba(0,0,0,0.4)",
+                            backgroundColor: "rgba(0,0,0,0.45)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
+                            zIndex: 2,
                           }}
                         >
                           <Star
-                            size={14}
+                            size={isMobile ? 11 : 14}
                             fill={isFav ? "var(--color-accent-blue)" : "none"}
                             color={isFav ? "var(--color-accent-blue)" : "#94a3b8"}
                           />
@@ -1025,14 +1026,14 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
 
                         <div
                           style={{
-                            width: isMobile ? "54px" : "60px",
-                            height: isMobile ? "54px" : "60px",
+                            width: isMobile ? "36px" : "60px",
+                            height: isMobile ? "36px" : "60px",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            borderRadius: "8px",
+                            borderRadius: "6px",
                             backgroundColor: "var(--color-logo-bg)",
-                            padding: isMobile ? "4px" : "5px",
+                            padding: isMobile ? "2px" : "5px",
                           }}
                         >
                           {chan.logoUrl ? (
@@ -1042,13 +1043,13 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                               style={{ width: "100%", height: "100%", objectFit: "contain" }}
                             />
                           ) : (
-                            <Tv size={isMobile ? 22 : 24} style={{ color: "var(--color-muted)" }} />
+                            <Tv size={isMobile ? 18 : 24} style={{ color: "var(--color-muted)" }} />
                           )}
                         </div>
 
                         <span
                           style={{
-                            fontSize: "13px",
+                            fontSize: isMobile ? "11px" : "13px",
                             fontWeight: 600,
                             textAlign: "center",
                             width: "100%",
