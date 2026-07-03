@@ -365,19 +365,17 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
     return filtered;
   }, [allChannels, selectedCategory, favorites, recents, searchQuery]);
 
-  // Set initial focused channel
+  // Set initial focused channel only once when allChannels loads
   useEffect(() => {
-    if (displayedChannels.length > 0) {
+    if (allChannels.length > 0 && !focusedChannel) {
       if (lastFocusedChannelId) {
-        const found = displayedChannels.find((c) => c.id === lastFocusedChannelId);
-        setFocusedChannel(found || displayedChannels[0]);
+        const found = allChannels.find((c) => c.id === lastFocusedChannelId);
+        setFocusedChannel(found || allChannels[0]);
       } else {
-        setFocusedChannel(displayedChannels[0]);
+        setFocusedChannel(allChannels[0]);
       }
-    } else {
-      setFocusedChannel(null);
     }
-  }, [displayedChannels, lastFocusedChannelId]);
+  }, [allChannels]);
 
   const handleChannelFocus = (channel: Channel) => {
     setFocusedChannel(channel);
