@@ -26,8 +26,10 @@ export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
 
-    const data = await response.text();
-    return res.status(response.status).send(data);
+    // Read as binary buffer to prevent any encoding issues
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return res.status(response.status).send(buffer);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
