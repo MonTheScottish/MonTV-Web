@@ -99,8 +99,6 @@
         showError("Lỗi phát luồng DRM.");
       });
 
-      // Parse query params
-      const urlParams = new URLSearchParams(window.location.search);
       const videoUrl = urlParams.get('videoUrl');
       const keysParam = urlParams.get('keys');
       const keyIdParam = urlParams.get('keyId');
