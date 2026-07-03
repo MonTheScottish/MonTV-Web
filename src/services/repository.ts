@@ -526,10 +526,12 @@ export class MonTVRepository {
     }
 
     if (provider === "webview") {
-      // In web app, we prefer loading ALL webviews (including shaka.html) in an iframe
-      // because browsers cannot play encrypted DRM streams natively without key configurations.
+      let resolvedUrl = url;
+      if (url.startsWith("https://freem3u.xyz/shaka.html")) {
+        resolvedUrl = url.replace("https://freem3u.xyz/shaka.html", "/shaka.html");
+      }
       return {
-        url,
+        url: resolvedUrl,
         isWebView: true,
       };
     }

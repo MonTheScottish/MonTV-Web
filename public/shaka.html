@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MonTV Web Player</title>
+  <!-- Shaka Player CDN -->
+  <script src="https://ajax.googleapis.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: black;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #error {
+      color: #ef4444;
+      font-family: sans-serif;
+      font-size: 14px;
+      position: absolute;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay controls playsinline></video>
+  <div id="error" style="display: none;"></div>
+
+  <script>
+    async function init() {
+      // Install built-in polyfills
+      shaka.polyfill.installAll();
+
+      if (!shaka.Player.isBrowserSupported()) {
+        showError("Trình duyệt không hỗ trợ Shaka Player.");
+        return;
+      }
+
+      const video = document.getElementById('video');
+      const player = new shaka.Player(video);
+
+      // Listen for error events
+      player.addEventListener('error', (event) => {
+        console.error('Shaka Player error:', event.detail);
+        showError("Lỗi phát luồng DRM.");
+      });
+
+      // Parse query params
+      const urlParams = new URLSearchParams(window.location.search);
+      const videoUrl = urlParams.get('videoUrl');
+      const keysParam = urlParams.get('keys');
+      const keyIdParam = urlParams.get('keyId');
+      const keyParam = urlParams.get('key');
+
+      if (!videoUrl) {
+        showError("Thiếu tham số videoUrl.");
+        return;
+      }
+
+      // Configure DRM / ClearKey
+      const clearKeys = {};
+      if (keysParam) {
+        // Format: key_id_hex:key_hex
+        const parts = keysParam.split(':');
+        if (parts.length === 2) {
+          clearKeys[parts[0]] = parts[1];
+        }
+      } else if (keyIdParam && keyParam) {
+        clearKeys[keyIdParam] = keyParam;
+      }
+
+      if (Object.keys(clearKeys).length > 0) {
+        player.configure({
+          drm: {
+            clearKeys: clearKeys
+          }
+        });
+      }
+
+      // Load video
+      try {
+        await player.load(videoUrl);
+        console.log('Video loaded successfully.');
+      } catch (e) {
+        console.error('Error loading video:', e);
+        showError("Lỗi tải luồng phát.");
+      }
+    }
+
+    function showError(msg) {
+      const errEl = document.getElementById('error');
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

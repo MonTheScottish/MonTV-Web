@@ -234,6 +234,16 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [focusedChannel, setFocusedChannel] = useState<Channel | null>(null);
   const [debouncedChannel, setDebouncedChannel] = useState<Channel | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     setDebouncedChannel(null);
@@ -511,18 +521,21 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
           </button>
         </div>
       ) : (
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          {/* Sidebar Categories (Left - Full Height) */}
+        <div style={{ flex: 1, display: "flex", flexDirection: isMobile ? "column" : "row", overflow: "hidden" }}>
+          {/* Sidebar Categories (Responsive Layout) */}
           <div
             style={{
-              flex: "0 0 240px",
-              borderRight: "1px solid var(--color-border)",
+              flex: isMobile ? "0 0 auto" : "0 0 240px",
+              borderRight: isMobile ? "none" : "1px solid var(--color-border)",
+              borderBottom: isMobile ? "1px solid var(--color-border)" : "none",
               backgroundColor: "rgba(0, 0, 0, 0.12)",
               display: "flex",
-              flexDirection: "column",
-              padding: "16px 8px",
-              overflowY: "auto",
-              gap: "4px",
+              flexDirection: isMobile ? "row" : "column",
+              padding: isMobile ? "8px 12px" : "16px 8px",
+              overflowX: isMobile ? "auto" : "hidden",
+              overflowY: isMobile ? "hidden" : "auto",
+              gap: "6px",
+              whiteSpace: isMobile ? "nowrap" : "normal",
             }}
           >
             {categories.map((cat) => {
@@ -532,17 +545,18 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                   key={cat}
                   onClick={() => onCategorySelected(cat)}
                   style={{
-                    width: "100%",
-                    padding: "12px 16px",
+                    width: isMobile ? "auto" : "100%",
+                    flexShrink: 0,
+                    padding: isMobile ? "8px 14px" : "12px 16px",
                     textAlign: "left",
                     border: "none",
                     borderRadius: "8px",
                     fontSize: "13px",
                     fontWeight: isActive ? 700 : 500,
                     cursor: "pointer",
-                    display: "flex",
+                    display: "inline-flex",
                     alignItems: "center",
-                    gap: "10px",
+                    gap: "8px",
                     color: isActive ? "white" : "var(--color-muted)",
                     backgroundColor: isActive ? "var(--color-secondary)" : "transparent",
                     transition: "all 0.15s",
@@ -566,12 +580,12 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
             })}
           </div>
 
-          {/* Main Layout Area (Right - Full Height) */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            {/* Top Preview/EPG Row */}
+             {/* Top Preview/EPG Row */}
             <div
               style={{
                 display: "flex",
+                flexDirection: isMobile ? "column" : "row",
                 borderBottom: "1px solid var(--color-border)",
                 backgroundColor: "rgba(0, 0, 0, 0.05)",
               }}
@@ -580,11 +594,13 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
               <div
                 style={{
                   flex: 1,
-                  padding: "24px",
+                  padding: isMobile ? "16px" : "24px",
                   display: "flex",
-                  gap: "24px",
-                  alignItems: "center",
-                  borderRight: "1px solid var(--color-border)",
+                  flexDirection: isMobile ? "column" : "row",
+                  gap: isMobile ? "16px" : "24px",
+                  alignItems: isMobile ? "stretch" : "center",
+                  borderRight: isMobile ? "none" : "1px solid var(--color-border)",
+                  borderBottom: isMobile ? "1px solid var(--color-border)" : "none",
                 }}
               >
                 {focusedChannel ? (
@@ -593,9 +609,10 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                     <div
                       onClick={() => handlePlay(focusedChannel)}
                       style={{
-                        width: "384px",
-                        height: "216px",
-                        minWidth: "384px",
+                        width: isMobile ? "100%" : "384px",
+                        height: isMobile ? "auto" : "216px",
+                        aspectRatio: isMobile ? "16/9" : undefined,
+                        minWidth: isMobile ? "0" : "384px",
                         borderRadius: "12px",
                         backgroundColor: "black",
                         border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -759,11 +776,14 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
               {/* EPG Schedules Panel (Right) */}
               <div
                 style={{
-                  width: "380px",
-                  minWidth: "380px",
-                  padding: "24px",
+                  width: isMobile ? "100%" : "380px",
+                  minWidth: isMobile ? "0" : "380px",
+                  borderLeft: isMobile ? "none" : "1px solid var(--color-border)",
+                  borderTop: isMobile ? "1px solid var(--color-border)" : "none",
+                  padding: isMobile ? "16px" : "24px",
                   display: "flex",
                   flexDirection: "column",
+                  maxHeight: isMobile ? "185px" : "280px",
                   overflowY: "auto",
                   backgroundColor: "rgba(0,0,0,0.15)",
                 }}
