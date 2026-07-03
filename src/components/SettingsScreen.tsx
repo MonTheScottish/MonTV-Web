@@ -16,6 +16,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
+  // Sync state variables
+  const [configCode, setConfigCode] = useState<string>("");
+  const [importCode, setImportCode] = useState<string>("");
+  const [showImportArea, setShowImportArea] = useState<boolean>(false);
+
   React.useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
@@ -48,6 +53,76 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       setStatusMsg("Làm mới EPG thất bại. Vui lòng thử lại.");
     } finally {
       setIsRefreshing(false);
+      setTimeout(() => setStatusMsg(null), 3000);
+    }
+  };
+
+  const handleExportConfig = () => {
+    try {
+      const favs = Array.from(repository.getFavorites());
+      const recents = repository.getRecentChannelIds();
+      const playlist = repository.getPlaylistUrl();
+      const theme = localStorage.getItem("montv-theme") || "dark";
+      
+      const configObj = {
+        playlist,
+        favorites: favs,
+        recents,
+        theme
+      };
+      
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(configObj))));
+      setConfigCode(encoded);
+      setShowImportArea(false);
+      setStatusMsg("Đã xuất mã cấu hình thành công!");
+      setTimeout(() => setStatusMsg(null), 3000);
+    } catch (e) {
+      console.error(e);
+      setStatusMsg("Xuất cấu hình thất bại.");
+      setTimeout(() => setStatusMsg(null), 3000);
+    }
+  };
+
+  const handleCopyConfig = () => {
+    if (!configCode) return;
+    navigator.clipboard.writeText(configCode).then(() => {
+      setStatusMsg("Đã sao chép mã cấu hình vào bộ nhớ tạm!");
+      setTimeout(() => setStatusMsg(null), 3000);
+    }).catch(() => {
+      setStatusMsg("Sao chép thất bại. Vui lòng chọn và sao chép thủ công.");
+      setTimeout(() => setStatusMsg(null), 3000);
+    });
+  };
+
+  const handleImportConfig = () => {
+    if (!importCode.trim()) {
+      setStatusMsg("Vui lòng dán mã cấu hình hợp lệ.");
+      return;
+    }
+    try {
+      const decoded = decodeURIComponent(escape(atob(importCode.trim())));
+      const configObj = JSON.parse(decoded);
+      
+      if (configObj.playlist) {
+        repository.setPlaylistUrl(configObj.playlist);
+      }
+      if (Array.isArray(configObj.favorites)) {
+        localStorage.setItem("montv_favorites", JSON.stringify(configObj.favorites));
+      }
+      if (Array.isArray(configObj.recents)) {
+        localStorage.setItem("montv_recents", JSON.stringify(configObj.recents));
+      }
+      if (configObj.theme === "light" || configObj.theme === "dark") {
+        localStorage.setItem("montv-theme", configObj.theme);
+      }
+      
+      setStatusMsg("Đã nhập cấu hình thành công! Ứng dụng sẽ tải lại...");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (e) {
+      console.error(e);
+      setStatusMsg("Mã cấu hình không hợp lệ hoặc bị lỗi.");
       setTimeout(() => setStatusMsg(null), 3000);
     }
   };
@@ -225,6 +300,133 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <Trash2 size={16} />
             Xóa danh sách kênh xem gần đây
           </button>
+
+          <h2 style={{ fontSize: "18px", fontWeight: 600, borderBottom: "1px solid var(--color-border)", paddingBottom: "10px", marginTop: "12px", color: "var(--color-accent-blue)" }}>
+            Đồng bộ & Sao lưu
+          </h2>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
+              Dễ dàng sao chép danh sách Yêu thích và nguồn kênh sang thiết bị khác.
+            </span>
+            
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                onClick={handleExportConfig}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  backgroundColor: "var(--color-search-bg)",
+                  color: "var(--color-on-background)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Xuất cấu hình
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowImportArea(!showImportArea);
+                  setConfigCode("");
+                }}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  backgroundColor: "var(--color-search-bg)",
+                  color: "var(--color-on-background)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Nhập cấu hình
+              </button>
+            </div>
+
+            {configCode && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+                <label style={{ fontSize: "12px", color: "var(--color-accent-blue)", fontWeight: 600 }}>Mã cấu hình của bạn:</label>
+                <textarea
+                  readOnly
+                  value={configCode}
+                  onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                  style={{
+                    width: "100%",
+                    height: "80px",
+                    padding: "8px",
+                    backgroundColor: "rgba(0,0,0,0.1)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "6px",
+                    color: "var(--color-on-background)",
+                    fontSize: "11px",
+                    fontFamily: "monospace",
+                    resize: "none",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  onClick={handleCopyConfig}
+                  style={{
+                    padding: "8px",
+                    backgroundColor: "var(--color-accent-blue)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Sao chép mã
+                </button>
+              </div>
+            )}
+
+            {showImportArea && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+                <label style={{ fontSize: "12px", color: "var(--color-accent-blue)", fontWeight: 600 }}>Dán mã cấu hình vào đây:</label>
+                <textarea
+                  placeholder="Dán đoạn mã cấu hình đã sao chép..."
+                  value={importCode}
+                  onChange={(e) => setImportCode(e.target.value)}
+                  style={{
+                    width: "100%",
+                    height: "80px",
+                    padding: "8px",
+                    backgroundColor: "rgba(0,0,0,0.1)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "6px",
+                    color: "var(--color-on-background)",
+                    fontSize: "11px",
+                    fontFamily: "monospace",
+                    resize: "none",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  onClick={handleImportConfig}
+                  style={{
+                    padding: "8px",
+                    backgroundColor: "var(--color-secondary)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Xác nhận Nhập
+                </button>
+              </div>
+            )}
+          </div>
 
           {statusMsg && (
             <div

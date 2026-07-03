@@ -31,9 +31,15 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
     if (savedSrcIdx !== -1) {
       sourceIndex = savedSrcIdx < channel.urls.length ? savedSrcIdx : 0;
     } else {
-      // Prioritize webview / DRM source if no working index has been saved yet
-      const webviewIdx = channel.urls.findIndex((u) => u.provider === "webview");
-      sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
+      // Prioritize standard HLS streams on iOS to avoid Widevine DRM blocks
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        const nonWebviewIdx = channel.urls.findIndex((u) => u.provider !== "webview");
+        sourceIndex = nonWebviewIdx !== -1 ? nonWebviewIdx : 0;
+      } else {
+        const webviewIdx = channel.urls.findIndex((u) => u.provider === "webview");
+        sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
+      }
     }
     setActiveSourceIndex(sourceIndex);
   }, [channel.id]);
