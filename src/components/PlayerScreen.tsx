@@ -23,6 +23,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isWebView, setIsWebView] = useState(false);
 
   // Source selector state
   const [activeSourceIndex, setActiveSourceIndex] = useState(0);
@@ -62,6 +63,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     let active = true;
     setLoading(true);
     setErrorMsg(null);
+    setIsWebView(false); // Reset to default
 
     const resolveStream = async () => {
       try {
@@ -71,16 +73,19 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
         if (resolved && resolved.url) {
           setStreamUrl(resolved.url);
           setResolvedHeaders(resolved.headers || {});
+          setIsWebView(!!resolved.isWebView);
         } else {
           // Fallback to direct streamUrl
           setStreamUrl(currentChannel.streamUrl);
           setResolvedHeaders({});
+          setIsWebView(false);
         }
       } catch (e) {
         console.error("Error resolving stream:", e);
         if (active) {
           setStreamUrl(currentChannel.streamUrl);
           setResolvedHeaders({});
+          setIsWebView(false);
         }
       }
     };
@@ -131,6 +136,10 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
 
   // Handle streamUrl playback with hls.js
   useEffect(() => {
+    if (isWebView) {
+      // In webview mode, the iframe handles its own playback
+      return;
+    }
     const video = videoRef.current;
     if (!video || !streamUrl) return;
 
@@ -323,6 +332,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   }, [currentChannel, channelList]);
 
   const togglePlay = () => {
+    if (isWebView) return; // Skip for webview iframe
     const video = videoRef.current;
     if (!video) return;
 
@@ -343,13 +353,16 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     // Trigger reload
     setLoading(true);
     setErrorMsg(null);
+    setIsWebView(false);
     repository.resolveChannelStreamUrl(currentChannel, index).then((resolved) => {
       if (resolved && resolved.url) {
         setStreamUrl(resolved.url);
         setResolvedHeaders(resolved.headers || {});
+        setIsWebView(!!resolved.isWebView);
       } else {
         setStreamUrl(currentChannel.streamUrl);
         setResolvedHeaders({});
+        setIsWebView(false);
       }
     });
     resetControlsTimeout();
@@ -374,11 +387,27 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       onMouseMove={resetControlsTimeout}
       onClick={resetControlsTimeout}
     >
-      <video
-        ref={videoRef}
-        playsInline
-        style={{ width: "100%", height: "100%", display: "block" }}
-      />
+      {isWebView ? (
+        <iframe
+          src={streamUrl}
+          style={{
+            width: "100%",
+            height: "100%",
+            border: "none",
+            backgroundColor: "black",
+            display: "block",
+          }}
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          onLoad={() => setLoading(false)}
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          playsInline
+          style={{ width: "100%", height: "100%", display: "block" }}
+        />
+      )}
 
       {/* Loading Overlay */}
       {loading && (

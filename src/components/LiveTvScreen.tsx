@@ -15,6 +15,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
   const [streamUrl, setStreamUrl] = useState("");
   const [resolvedHeaders, setResolvedHeaders] = useState<Record<string, string>>({});
   const [activeSourceIndex, setActiveSourceIndex] = useState(0);
+  const [isWebView, setIsWebView] = useState(false);
 
   // Sync source index when channel changes
   useEffect(() => {
@@ -26,6 +27,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
   // Fetch resolved stream URL when channel or source index changes
   useEffect(() => {
     let active = true;
+    setIsWebView(false);
     const resolve = async () => {
       try {
         const resolved = await repository.resolveChannelStreamUrl(channel, activeSourceIndex);
@@ -33,15 +35,18 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
         if (resolved && resolved.url) {
           setStreamUrl(resolved.url);
           setResolvedHeaders(resolved.headers || {});
+          setIsWebView(!!resolved.isWebView);
         } else {
           setStreamUrl(channel.streamUrl);
           setResolvedHeaders({});
+          setIsWebView(false);
         }
       } catch (e) {
         console.error("MiniPlayer error resolving stream:", e);
         if (active) {
           setStreamUrl(channel.streamUrl);
           setResolvedHeaders({});
+          setIsWebView(false);
         }
       }
     };
@@ -65,6 +70,8 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
 
   // Setup Hls.js or HTML5 native playback
   useEffect(() => {
+    if (isWebView) return; // Skip for webviews
+
     const video = videoRef.current;
     if (!video || !streamUrl) return;
 
@@ -152,7 +159,23 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
         hlsRef.current = null;
       }
     };
-  }, [streamUrl, resolvedHeaders, activeSourceIndex, channel.id, channel.name]);
+  }, [streamUrl, resolvedHeaders, activeSourceIndex, channel.id, channel.name, isWebView]);
+
+  if (isWebView) {
+    return (
+      <iframe
+        src={streamUrl}
+        style={{
+          width: "100%",
+          height: "100%",
+          border: "none",
+          backgroundColor: "black",
+          borderRadius: "12px",
+        }}
+        allow="autoplay; encrypted-media"
+      />
+    );
+  }
 
   return (
     <video

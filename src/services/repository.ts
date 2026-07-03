@@ -520,41 +520,8 @@ export class MonTVRepository {
     }
 
     if (provider === "webview") {
-      if (url.includes("shaka.html")) {
-        try {
-          const parsedUrl = new URL(url);
-          const videoUrl = parsedUrl.searchParams.get("videoUrl");
-          if (videoUrl) {
-            const keyId = parsedUrl.searchParams.get("keyId");
-            const key = parsedUrl.searchParams.get("key");
-            const keysParam = parsedUrl.searchParams.get("keys");
-
-            let resolvedKeyId = keyId;
-            let resolvedKey = key;
-
-            if (keysParam && keysParam.includes(":")) {
-              const parts = keysParam.split(":");
-              resolvedKeyId = parts[0];
-              resolvedKey = parts[1];
-            }
-
-            const headers: Record<string, string> = {};
-            if (channel.userAgent) headers["User-Agent"] = channel.userAgent;
-            if (channel.referer) headers["Referer"] = channel.referer;
-
-            return {
-              url: videoUrl,
-              headers,
-              drmScheme: "clearkey",
-              drmKeyId: resolvedKeyId,
-              drmKey: resolvedKey,
-              isWebView: false,
-            };
-          }
-        } catch (e) {
-          console.error("Error parsing webview shaka URL:", url, e);
-        }
-      }
+      // In web app, we prefer loading ALL webviews (including shaka.html) in an iframe
+      // because browsers cannot play encrypted DRM streams natively without key configurations.
       return {
         url,
         isWebView: true,
