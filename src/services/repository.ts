@@ -512,6 +512,10 @@ export class MonTVRepository {
     let url = channelUrl.url;
     if (!url) return null;
 
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && url.startsWith("http://")) {
+      url = url.replace("http://", "https://");
+    }
+
     if (!provider || provider === "hls" || provider === "video" || provider === "backup_public") {
       const headers: Record<string, string> = {};
       if (channel.userAgent) headers["User-Agent"] = channel.userAgent;
