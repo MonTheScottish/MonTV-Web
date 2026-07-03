@@ -676,6 +676,8 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                 flexDirection: isMobile ? "column" : "row",
                 borderBottom: "1px solid var(--color-border)",
                 backgroundColor: "rgba(0, 0, 0, 0.05)",
+                flex: isMobile ? 1 : "0 0 auto",
+                overflowY: isMobile ? "auto" : "visible",
               }}
             >
               {/* Channel Preview Panel (Left) */}
@@ -877,8 +879,8 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                   padding: isMobile ? "16px" : "24px",
                   display: "flex",
                   flexDirection: "column",
-                  maxHeight: isMobile ? "185px" : "280px",
-                  overflowY: "auto",
+                  maxHeight: isMobile ? "none" : "280px",
+                  overflowY: isMobile ? "visible" : "auto",
                   backgroundColor: "var(--color-epg-container-bg)",
                 }}
               >
@@ -961,109 +963,209 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
               </div>
             </div>
 
-            {/* Bottom Channels Grid */}
-            <div style={{ flex: 1, padding: isMobile ? "12px 12px 80px 12px" : "16px", overflowY: "auto" }}>
+            <div
+              style={{
+                flex: isMobile ? "0 0 auto" : 1,
+                padding: isMobile ? "6px 12px 16px 12px" : "16px",
+                overflowY: isMobile ? "hidden" : "auto",
+                borderTop: isMobile ? "1px solid var(--color-border)" : "none",
+                backgroundColor: "var(--color-surface)",
+              }}
+            >
               {displayedChannels.length > 0 ? (
-                <div className="tv-grid">
-                  {displayedChannels.map((chan) => {
-                    const isFav = favorites.has(chan.id);
-                    const isFocused = focusedChannel?.id === chan.id;
-                    return (
-                      <div
-                        key={chan.id}
-                        onClick={() => {
-                          if (isMobile) {
-                            handlePlay(chan);
-                          } else {
-                            handleChannelFocus(chan);
-                          }
-                        }}
-                        onDoubleClick={() => {
-                          if (!isMobile) {
-                            handlePlay(chan);
-                          }
-                        }}
-                        className="glass-card"
-                        style={{
-                          position: "relative",
-                          borderRadius: "8px",
-                          padding: isMobile ? "6px 4px" : "12px",
-                          cursor: "pointer",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: isMobile ? "4px" : "8px",
-                          border: isFocused ? "2px solid var(--color-accent-blue)" : "1px solid var(--color-border)",
-                          boxShadow: isFocused ? "0 0 15px rgba(138, 180, 248, 0.25)" : "none",
-                          transform: isFocused ? "translateY(-4px)" : "none",
-                        }}
-                      >
-                        {/* Favorite Button Overlay */}
-                        <button
-                          onClick={(e) => toggleFavorite(e, chan.id)}
-                          style={{
-                            position: "absolute",
-                            top: isMobile ? "4px" : "8px",
-                            right: isMobile ? "4px" : "8px",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: isMobile ? "3px" : "4px",
-                            borderRadius: "50%",
-                            backgroundColor: "rgba(0,0,0,0.45)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            zIndex: 2,
-                          }}
-                        >
-                          <Star
-                            size={isMobile ? 11 : 14}
-                            fill={isFav ? "var(--color-accent-blue)" : "none"}
-                            color={isFav ? "var(--color-accent-blue)" : "#94a3b8"}
-                          />
-                        </button>
-
+                isMobile ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      overflowX: "auto",
+                      overflowY: "hidden",
+                      gap: "10px",
+                      padding: "4px 2px 8px 2px",
+                      width: "100%",
+                      WebkitOverflowScrolling: "touch",
+                    }}
+                  >
+                    {displayedChannels.map((chan) => {
+                      const isFav = favorites.has(chan.id);
+                      const isFocused = focusedChannel?.id === chan.id;
+                      return (
                         <div
+                          key={chan.id}
+                          onClick={() => handlePlay(chan)}
+                          className="glass-card"
                           style={{
-                            width: isMobile ? "36px" : "60px",
-                            height: isMobile ? "36px" : "60px",
+                            position: "relative",
+                            borderRadius: "8px",
+                            padding: "8px 6px",
+                            cursor: "pointer",
                             display: "flex",
+                            flexDirection: "column",
                             alignItems: "center",
-                            justifyContent: "center",
-                            borderRadius: "6px",
-                            backgroundColor: "var(--color-logo-bg)",
-                            padding: isMobile ? "2px" : "5px",
+                            gap: "4px",
+                            border: isFocused ? "2px solid var(--color-accent-blue)" : "1px solid var(--color-border)",
+                            boxShadow: isFocused ? "0 0 15px rgba(138, 180, 248, 0.25)" : "none",
+                            width: "74px",
+                            flexShrink: 0,
                           }}
                         >
-                          {chan.logoUrl ? (
-                            <img
-                              src={chan.logoUrl}
-                              alt={chan.name}
-                              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                          {/* Favorite Button Overlay */}
+                          <button
+                            onClick={(e) => toggleFavorite(e, chan.id)}
+                            style={{
+                              position: "absolute",
+                              top: "4px",
+                              right: "4px",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "2px",
+                              borderRadius: "50%",
+                              backgroundColor: "rgba(0,0,0,0.45)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              zIndex: 2,
+                            }}
+                          >
+                            <Star
+                              size={10}
+                              fill={isFav ? "var(--color-accent-blue)" : "none"}
+                              color={isFav ? "var(--color-accent-blue)" : "#94a3b8"}
                             />
-                          ) : (
-                            <Tv size={isMobile ? 18 : 24} style={{ color: "var(--color-muted)" }} />
-                          )}
-                        </div>
+                          </button>
 
-                        <span
+                          <div
+                            style={{
+                              width: "36px",
+                              height: "36px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: "6px",
+                              backgroundColor: "var(--color-logo-bg)",
+                              padding: "2px",
+                            }}
+                          >
+                            {chan.logoUrl ? (
+                              <img
+                                src={chan.logoUrl}
+                                alt={chan.name}
+                                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                              />
+                            ) : (
+                              <Tv size={18} style={{ color: "var(--color-muted)" }} />
+                            )}
+                          </div>
+
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              textAlign: "center",
+                              width: "100%",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {chan.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="tv-grid">
+                    {displayedChannels.map((chan) => {
+                      const isFav = favorites.has(chan.id);
+                      const isFocused = focusedChannel?.id === chan.id;
+                      return (
+                        <div
+                          key={chan.id}
+                          onClick={() => handleChannelFocus(chan)}
+                          onDoubleClick={() => handlePlay(chan)}
+                          className="glass-card"
                           style={{
-                            fontSize: isMobile ? "11px" : "13px",
-                            fontWeight: 600,
-                            textAlign: "center",
-                            width: "100%",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            position: "relative",
+                            borderRadius: "8px",
+                            padding: "12px",
+                            cursor: "pointer",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "8px",
+                            border: isFocused ? "2px solid var(--color-accent-blue)" : "1px solid var(--color-border)",
+                            boxShadow: isFocused ? "0 0 15px rgba(138, 180, 248, 0.25)" : "none",
+                            transform: isFocused ? "translateY(-4px)" : "none",
                           }}
                         >
-                          {chan.name}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                          {/* Favorite Button Overlay */}
+                          <button
+                            onClick={(e) => toggleFavorite(e, chan.id)}
+                            style={{
+                              position: "absolute",
+                              top: "8px",
+                              right: "8px",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "4px",
+                              borderRadius: "50%",
+                              backgroundColor: "rgba(0,0,0,0.4)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <Star
+                              size={14}
+                              fill={isFav ? "var(--color-accent-blue)" : "none"}
+                              color={isFav ? "var(--color-accent-blue)" : "#94a3b8"}
+                            />
+                          </button>
+
+                          <div
+                            style={{
+                              width: "60px",
+                              height: "60px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: "8px",
+                              backgroundColor: "var(--color-logo-bg)",
+                              padding: "5px",
+                            }}
+                          >
+                            {chan.logoUrl ? (
+                              <img
+                                src={chan.logoUrl}
+                                alt={chan.name}
+                                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                              />
+                            ) : (
+                              <Tv size={24} style={{ color: "var(--color-muted)" }} />
+                            )}
+                          </div>
+
+                          <span
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: 600,
+                              textAlign: "center",
+                              width: "100%",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {chan.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
               ) : (
                 <div
                   style={{
