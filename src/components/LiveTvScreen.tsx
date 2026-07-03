@@ -993,7 +993,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                       return (
                         <div
                           key={chan.id}
-                          onClick={() => handlePlay(chan)}
+                          onClick={() => handleChannelFocus(chan)}
                           className="glass-card"
                           style={{
                             position: "relative",

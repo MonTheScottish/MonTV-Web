@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import type { Channel, EPGProgram } from "../types";
 import { MonTVRepository } from "../services/repository";
-import { ArrowLeft, ArrowRight, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw, List, X, Search, Tv, Volume2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw, List, X, Search, Tv, Volume2, Sun } from "lucide-react";
 
 const areHeadersEqual = (h1: Record<string, string>, h2: Record<string, string>) => {
   const k1 = Object.keys(h1);
@@ -57,6 +57,71 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   const [showVolumeIndicator, setShowVolumeIndicator] = useState(false);
   const volumeTimeoutRef = useRef<any>(null);
   const isVolumeMounted = useRef(false);
+
+  // Brightness and Touch Gesture states
+  const [brightness, setBrightness] = useState(1.0);
+  const [showBrightnessIndicator, setShowBrightnessIndicator] = useState(false);
+  const brightnessTimeoutRef = useRef<any>(null);
+  const touchStartRef = useRef<{ x: number; y: number; side: "left" | "right"; startVal: number } | null>(null);
+
+  const triggerBrightnessIndicator = () => {
+    setShowBrightnessIndicator(true);
+    if (brightnessTimeoutRef.current) {
+      clearTimeout(brightnessTimeoutRef.current);
+    }
+    brightnessTimeoutRef.current = setTimeout(() => {
+      setShowBrightnessIndicator(false);
+    }, 1200);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isMobile) return;
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const x = touch.clientX;
+    const y = touch.clientY;
+    const side = x < window.innerWidth / 2 ? "left" : "right";
+    const startVal = side === "left" ? brightness : volume;
+    touchStartRef.current = { x, y, side, startVal };
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!touchStartRef.current) return;
+    if (e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const deltaY = touchStartRef.current.y - touch.clientY; // swipe up is positive
+
+    // Swipe 150px vertically to go from 0 to 100%
+    const change = deltaY / 150;
+    let newVal = Math.max(0, Math.min(1, touchStartRef.current.startVal + change));
+
+    if (touchStartRef.current.side === "left") {
+      newVal = Math.max(0.1, newVal);
+      setBrightness(newVal);
+      triggerBrightnessIndicator();
+    } else {
+      setVolume(newVal);
+      triggerVolumeIndicator();
+
+      const video = videoRef.current;
+      if (video) {
+        video.volume = newVal;
+        video.muted = newVal === 0;
+      }
+
+      if (isWebView && iframeRef.current) {
+        iframeRef.current.contentWindow?.postMessage(
+          { type: "setVolume", volume: newVal },
+          "*"
+        );
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartRef.current = null;
+  };
 
   const triggerVolumeIndicator = () => {
     setShowVolumeIndicator(true);
@@ -532,6 +597,9 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       }}
       onMouseMove={resetControlsTimeout}
       onClick={resetControlsTimeout}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {isWebView ? (
         <iframe
@@ -555,6 +623,21 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
           style={{ width: "100%", height: "100%", display: "block" }}
         />
       )}
+
+      {/* Brightness Dimming Overlay */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundColor: "black",
+          opacity: 1 - brightness,
+          pointerEvents: "none",
+          zIndex: 5,
+        }}
+      />
 
       {/* Loading Overlay */}
       {loading && (
@@ -1194,8 +1277,107 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
         </div>
       </div>
 
-      {/* Volume Indicator Overlay */}
-      {showVolumeIndicator && (
+      {/* VLC-style Side Indicators for Mobile Gestures */}
+      {isMobile && showBrightnessIndicator && (
+        <div
+          style={{
+            position: "absolute",
+            left: "24px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "8px",
+            padding: "14px 10px",
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            borderRadius: "20px",
+            zIndex: 35,
+            width: "42px",
+            pointerEvents: "none",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <Sun size={16} color="white" />
+          <div
+            style={{
+              width: "4px",
+              height: "100px",
+              backgroundColor: "rgba(255,255,255,0.2)",
+              borderRadius: "2px",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                width: "100%",
+                height: `${brightness * 100}%`,
+                backgroundColor: "var(--color-accent-blue)",
+              }}
+            />
+          </div>
+          <span style={{ fontSize: "9px", color: "white", fontWeight: 600 }}>
+            {Math.round(brightness * 100)}%
+          </span>
+        </div>
+      )}
+
+      {isMobile && showVolumeIndicator && (
+        <div
+          style={{
+            position: "absolute",
+            right: "24px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "8px",
+            padding: "14px 10px",
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            borderRadius: "20px",
+            zIndex: 35,
+            width: "42px",
+            pointerEvents: "none",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <Volume2 size={16} color="white" />
+          <div
+            style={{
+              width: "4px",
+              height: "100px",
+              backgroundColor: "rgba(255,255,255,0.2)",
+              borderRadius: "2px",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                width: "100%",
+                height: `${volume * 100}%`,
+                backgroundColor: "var(--color-accent-blue)",
+              }}
+            />
+          </div>
+          <span style={{ fontSize: "9px", color: "white", fontWeight: 600 }}>
+            {Math.round(volume * 100)}%
+          </span>
+        </div>
+      )}
+
+      {/* Volume Indicator Overlay (Desktop Only) */}
+      {!isMobile && showVolumeIndicator && (
         <div
           style={{
             position: "absolute",
