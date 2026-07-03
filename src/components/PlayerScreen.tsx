@@ -137,6 +137,18 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     setLoading(true);
     setErrorMsg(null);
 
+    let loadTimeoutId: any = null;
+
+    const startLoadingTimeout = () => {
+      if (loadTimeoutId) clearTimeout(loadTimeoutId);
+      loadTimeoutId = setTimeout(() => {
+        console.warn("Playback loading timed out after 10s. Trying next source...");
+        handleStreamFailureRef.current?.();
+      }, 10000);
+    };
+
+    startLoadingTimeout();
+
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
@@ -182,6 +194,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setLoading(false);
+        if (loadTimeoutId) clearTimeout(loadTimeoutId);
         playVideo();
       });
 
@@ -196,6 +209,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               hls.recoverMediaError();
               break;
             default:
+              if (loadTimeoutId) clearTimeout(loadTimeoutId);
               handleStreamFailureRef.current?.();
               break;
           }
@@ -204,17 +218,29 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     } else {
       setErrorMsg("Trình duyệt không hỗ trợ phát luồng HLS.");
       setLoading(false);
+      if (loadTimeoutId) clearTimeout(loadTimeoutId);
     }
 
-    const handleLoadedData = () => setLoading(false);
-    const handleWaiting = () => setLoading(true);
+    const handleLoadedData = () => {
+      setLoading(false);
+      if (loadTimeoutId) clearTimeout(loadTimeoutId);
+    };
+    const handleWaiting = () => {
+      setLoading(true);
+      startLoadingTimeout();
+    };
     const handlePlaying = () => {
       setLoading(false);
       setErrorMsg(null);
+      if (loadTimeoutId) clearTimeout(loadTimeoutId);
+      // Lock the successful working source index as the default
+      repository.setLastWorkingSourceIndex(currentChannel.id, activeSourceIndex);
+      console.log(`Successfully playing channel ${currentChannel.name} at source index ${activeSourceIndex}`);
     };
     const handleVideoError = () => {
       if (video.error) {
         console.error("HTML5 video error:", video.error);
+        if (loadTimeoutId) clearTimeout(loadTimeoutId);
         handleStreamFailureRef.current?.();
       }
     };
@@ -225,6 +251,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     video.addEventListener("error", handleVideoError);
 
     return () => {
+      if (loadTimeoutId) clearTimeout(loadTimeoutId);
       if (video) {
         video.removeEventListener("loadeddata", handleLoadedData);
         video.removeEventListener("waiting", handleWaiting);
@@ -368,6 +395,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
             alignItems: "center",
             backgroundColor: "rgba(0,0,0,0.5)",
             zIndex: 10,
+            pointerEvents: "none", // Let clicks pass through to controls
           }}
         >
           <RefreshCw className="pulse-badge" size={48} color="var(--color-accent-blue)" style={{ animationDuration: "1.5s" }} />
@@ -444,7 +472,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
           justifyContent: "space-between",
           padding: "32px",
           background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0.7) 100%)",
-          zIndex: 5,
+          zIndex: 15, // Sit above the loading overlay (10)
           opacity: showControls ? 1 : 0,
           pointerEvents: showControls ? "auto" : "none",
           transition: "opacity 0.3s ease",

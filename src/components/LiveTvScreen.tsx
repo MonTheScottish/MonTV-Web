@@ -14,14 +14,21 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
   const hlsRef = useRef<Hls | null>(null);
   const [streamUrl, setStreamUrl] = useState("");
   const [resolvedHeaders, setResolvedHeaders] = useState<Record<string, string>>({});
+  const [activeSourceIndex, setActiveSourceIndex] = useState(0);
 
+  // Sync source index when channel changes
+  useEffect(() => {
+    const savedSrcIdx = repository.getLastWorkingSourceIndex(channel.id);
+    const sourceIndex = savedSrcIdx < channel.urls.length ? savedSrcIdx : 0;
+    setActiveSourceIndex(sourceIndex);
+  }, [channel]);
+
+  // Fetch resolved stream URL when channel or source index changes
   useEffect(() => {
     let active = true;
     const resolve = async () => {
       try {
-        const savedSrcIdx = repository.getLastWorkingSourceIndex(channel.id);
-        const sourceIndex = savedSrcIdx < channel.urls.length ? savedSrcIdx : 0;
-        const resolved = await repository.resolveChannelStreamUrl(channel, sourceIndex);
+        const resolved = await repository.resolveChannelStreamUrl(channel, activeSourceIndex);
         if (!active) return;
         if (resolved && resolved.url) {
           setStreamUrl(resolved.url);
@@ -31,7 +38,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
           setResolvedHeaders({});
         }
       } catch (e) {
-        console.error("Error resolving stream:", e);
+        console.error("MiniPlayer error resolving stream:", e);
         if (active) {
           setStreamUrl(channel.streamUrl);
           setResolvedHeaders({});
@@ -42,8 +49,21 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
     return () => {
       active = false;
     };
-  }, [channel, repository]);
+  }, [channel, activeSourceIndex, repository]);
 
+  // Fallback switching reference
+  const handleStreamFailureRef = useRef<() => void>(() => {});
+  handleStreamFailureRef.current = () => {
+    const urlsCount = channel.urls.length > 0 ? channel.urls.length : 1;
+    if (activeSourceIndex + 1 < urlsCount) {
+      const nextIndex = activeSourceIndex + 1;
+      console.log(`MiniPlayer stream failed. Switching to source ${nextIndex}`);
+      repository.setLastWorkingSourceIndex(channel.id, nextIndex);
+      setActiveSourceIndex(nextIndex);
+    }
+  };
+
+  // Setup Hls.js or HTML5 native playback
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !streamUrl) return;
@@ -87,11 +107,44 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         playVideo();
       });
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              handleStreamFailureRef.current?.();
+              break;
+          }
+        }
+      });
     }
+
+    const handlePlaying = () => {
+      repository.setLastWorkingSourceIndex(channel.id, activeSourceIndex);
+      console.log(`MiniPlayer successfully playing channel ${channel.name} at index ${activeSourceIndex}`);
+    };
+
+    const handleVideoError = () => {
+      if (video.error) {
+        console.error("MiniPlayer HTML5 video error:", video.error);
+        handleStreamFailureRef.current?.();
+      }
+    };
+
+    video.addEventListener("playing", handlePlaying);
+    video.addEventListener("error", handleVideoError);
 
     return () => {
       if (video) {
         video.removeEventListener("loadedmetadata", playVideo);
+        video.removeEventListener("playing", handlePlaying);
+        video.removeEventListener("error", handleVideoError);
         video.src = "";
       }
       if (hlsRef.current) {
@@ -99,7 +152,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
         hlsRef.current = null;
       }
     };
-  }, [streamUrl, resolvedHeaders]);
+  }, [streamUrl, resolvedHeaders, activeSourceIndex, channel.id, channel.name]);
 
   return (
     <video
