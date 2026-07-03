@@ -489,7 +489,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
             <div
               style={{
                 display: "flex",
-                height: "230px",
+                height: "280px",
                 borderBottom: "1px solid var(--color-border)",
                 backgroundColor: "rgba(0, 0, 0, 0.05)",
               }}
@@ -509,9 +509,9 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                     {/* Debounced Preview Video / Fallback logo */}
                     <div
                       style={{
-                        width: "240px",
-                        height: "135px",
-                        minWidth: "240px",
+                        width: "320px",
+                        height: "180px",
+                        minWidth: "320px",
                         borderRadius: "12px",
                         backgroundColor: "black",
                         border: "1px solid rgba(255, 255, 255, 0.08)",
