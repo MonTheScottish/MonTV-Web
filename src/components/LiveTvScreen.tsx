@@ -677,17 +677,17 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                 borderBottom: "1px solid var(--color-border)",
                 backgroundColor: "rgba(0, 0, 0, 0.05)",
                 flex: isMobile ? 1 : "0 0 auto",
-                overflowY: isMobile ? "auto" : "visible",
+                overflow: "hidden",
               }}
             >
               {/* Channel Preview Panel (Left) */}
               <div
                 style={{
-                  flex: 1,
-                  padding: isMobile ? "16px" : "24px",
+                  flex: isMobile ? "0 0 auto" : 1,
+                  padding: isMobile ? "12px 16px" : "24px",
                   display: "flex",
                   flexDirection: isMobile ? "column" : "row",
-                  gap: isMobile ? "16px" : "24px",
+                  gap: isMobile ? "12px" : "24px",
                   alignItems: isMobile ? "stretch" : "center",
                   borderRight: isMobile ? "none" : "1px solid var(--color-border)",
                   borderBottom: isMobile ? "1px solid var(--color-border)" : "none",
@@ -876,11 +876,12 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                   minWidth: isMobile ? "0" : "380px",
                   borderLeft: isMobile ? "none" : "1px solid var(--color-border)",
                   borderTop: isMobile ? "1px solid var(--color-border)" : "none",
-                  padding: isMobile ? "16px" : "24px",
+                  padding: isMobile ? "12px 16px" : "24px",
                   display: "flex",
                   flexDirection: "column",
-                  maxHeight: isMobile ? "none" : "280px",
-                  overflowY: isMobile ? "visible" : "auto",
+                  flex: isMobile ? 1 : undefined,
+                  maxHeight: "none",
+                  overflowY: "auto",
                   backgroundColor: "var(--color-epg-container-bg)",
                 }}
               >
