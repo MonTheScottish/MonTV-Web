@@ -3,7 +3,7 @@ import { parseM3U, parseJSON } from "./playlistParser";
 import { parseEPGXml } from "./epgParser";
 
 export const DEFAULT_PLAYLIST_URL = "https://freem3u.xyz/api/channels/x_1.0.1/app.json";
-export const VNEPG_EPG_URL = "/epg.xml.gz";
+export const VNEPG_EPG_URL = "https://vnepg.site/epg.xml.gz";
 export const BACKUP_M3U_URLS = [
   "https://iptv-org.github.io/iptv/countries/vn.m3u",
   "https://iptv-org.github.io/iptv/languages/vie.m3u",
@@ -429,6 +429,8 @@ export class MonTVRepository {
 
     for (const channel of this.cachedChannels) {
       const tvgId = channel.tvgId;
+      let matchedVnepgId: string | null = null;
+
       if (tvgId) {
         const candidates: string[] = [];
         candidates.push(tvgId.toLowerCase());
@@ -442,9 +444,13 @@ export class MonTVRepository {
 
         const hit = candidates.find((c) => vnepgKeys.has(c));
         if (hit) {
+          matchedVnepgId = hit;
           resolved[tvgId] = hit;
         }
-      } else {
+      }
+
+      // Fallback: match by normalized name if tvgId matching yielded no results
+      if (!matchedVnepgId) {
         const channelNameNorm = this.normalizeEPGName(channel.name);
         let vnepgHit: string | null = null;
         for (const vnepgName in vnepgNames) {
