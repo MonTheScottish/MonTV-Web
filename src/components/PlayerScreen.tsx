@@ -48,7 +48,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     controlsTimeoutRef.current = setTimeout(() => {
       setShowControls(false);
       setShowSourceSelector(false);
-    }, 4000);
+    }, 2500);
   };
 
   // Sync source index with repository setting when channel changes
@@ -507,7 +507,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "32px",
-          background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0.7) 100%)",
+          background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.45) 100%)",
           zIndex: 15, // Sit above the loading overlay (10)
           opacity: showControls ? 1 : 0,
           pointerEvents: showControls ? "auto" : "none",
