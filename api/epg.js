@@ -1,36 +1,49 @@
-export default async function handler(req, res) {
-  // Reconstruct path and query parameters
-  const path = req.query.path || "";
+export const config = {
+  runtime: "edge",
+};
+
+export default async function handler(request) {
+  const urlObj = new URL(request.url);
   
-  // Get all query params except 'path'
-  const queryParams = new URLSearchParams(req.query);
+  // Reconstruct path and query parameters
+  const path = urlObj.searchParams.get("path") || "";
+  
+  // Copy search params and delete "path"
+  const queryParams = new URLSearchParams(urlObj.searchParams);
   queryParams.delete("path");
   
   const queryString = queryParams.toString();
-  const url = `https://vnepg.site/${path}${queryString ? "?" + queryString : ""}`;
+  const targetUrl = `https://vnepg.site/${path}${queryString ? "?" + queryString : ""}`;
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(targetUrl, {
       headers: {
         "User-Agent": "OkHttp/4.9.2",
         "Referer": "https://vnepg.site",
       },
     });
 
+    const headers = new Headers();
     const contentType = response.headers.get("content-type");
     if (contentType) {
-      res.setHeader("Content-Type", contentType);
+      headers.set("Content-Type", contentType);
     }
     
     // Enable CORS
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    headers.set("Access-Control-Allow-Origin", "*");
+    headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
 
-    // Read as binary buffer to prevent gzip corruption
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    return res.status(response.status).send(buffer);
+    return new Response(response.body, {
+      status: response.status,
+      headers,
+    });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
   }
 }
