@@ -572,7 +572,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
             <div
               style={{
                 display: "flex",
-                height: "320px",
+                height: "400px",
                 borderBottom: "1px solid var(--color-border)",
                 backgroundColor: "rgba(0, 0, 0, 0.05)",
               }}
@@ -591,6 +591,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                   <>
                     {/* Debounced Preview Video / Fallback logo */}
                     <div
+                      onClick={() => handlePlay(focusedChannel)}
                       style={{
                         width: "384px",
                         height: "216px",
@@ -603,7 +604,9 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                         justifyContent: "center",
                         overflow: "hidden",
                         position: "relative",
+                        cursor: "pointer",
                       }}
+                      title="Bấm để xem toàn màn hình"
                     >
                       {debouncedChannel && debouncedChannel.id === focusedChannel.id ? (
                         <MiniPlayer channel={debouncedChannel} repository={repository} />
@@ -818,8 +821,8 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                     return (
                       <div
                         key={chan.id}
-                        onClick={() => handlePlay(chan)}
-                        onMouseEnter={() => handleChannelFocus(chan)}
+                        onClick={() => handleChannelFocus(chan)}
+                        onDoubleClick={() => handlePlay(chan)}
                         className="glass-card"
                         style={{
                           position: "relative",
