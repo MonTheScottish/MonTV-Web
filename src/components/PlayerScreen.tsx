@@ -54,7 +54,14 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   // Sync source index with repository setting when channel changes
   useEffect(() => {
     const savedSrcIdx = repository.getLastWorkingSourceIndex(currentChannel.id);
-    const sourceIndex = savedSrcIdx < currentChannel.urls.length ? savedSrcIdx : 0;
+    let sourceIndex = 0;
+    if (savedSrcIdx !== -1) {
+      sourceIndex = savedSrcIdx < currentChannel.urls.length ? savedSrcIdx : 0;
+    } else {
+      // Prioritize webview / DRM source if no working index has been saved yet
+      const webviewIdx = currentChannel.urls.findIndex((u) => u.provider === "webview");
+      sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
+    }
     setActiveSourceIndex(sourceIndex);
   }, [currentChannel]);
 

@@ -20,7 +20,14 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
   // Sync source index when channel changes
   useEffect(() => {
     const savedSrcIdx = repository.getLastWorkingSourceIndex(channel.id);
-    const sourceIndex = savedSrcIdx < channel.urls.length ? savedSrcIdx : 0;
+    let sourceIndex = 0;
+    if (savedSrcIdx !== -1) {
+      sourceIndex = savedSrcIdx < channel.urls.length ? savedSrcIdx : 0;
+    } else {
+      // Prioritize webview / DRM source if no working index has been saved yet
+      const webviewIdx = channel.urls.findIndex((u) => u.provider === "webview");
+      sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
+    }
     setActiveSourceIndex(sourceIndex);
   }, [channel]);
 

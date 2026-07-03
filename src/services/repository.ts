@@ -170,7 +170,7 @@ export class MonTVRepository {
 
   getLastWorkingSourceIndex(channelId: string): number {
     const val = localStorage.getItem(this.KEY_WORKING_SRC + channelId);
-    return val ? parseInt(val, 10) : 0;
+    return val ? parseInt(val, 10) : -1;
   }
 
   setLastWorkingSourceIndex(channelId: string, index: number): void {
