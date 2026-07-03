@@ -158,20 +158,23 @@ video {
 /* Layout Utilities */
 .tv-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, 140px);
   gap: 16px;
+  justify-content: start;
 }
 
 @media (max-width: 768px) {
   .tv-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(4, 80px);
+    gap: 10px;
+    justify-content: center;
   }
 }
 
 @media (max-width: 480px) {
   .tv-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    grid-template-columns: repeat(4, 72px);
+    gap: 8px;
+    justify-content: center;
   }
 }
