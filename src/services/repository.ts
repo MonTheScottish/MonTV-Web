@@ -102,15 +102,13 @@ export class MonTVRepository {
     this.cachedUrl = localStorage.getItem(this.KEY_PLAYLIST_URL) || DEFAULT_PLAYLIST_URL;
   }
 
-  // Proxies URLs for development if running on localhost to bypass CORS
+  // Proxies URLs to bypass CORS and Cloudflare restrictions
   private getProxyUrl(url: string): string {
-    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-      if (url.startsWith("https://freem3u.xyz")) {
-        return url.replace("https://freem3u.xyz", "/api-playlist");
-      }
-      if (url.startsWith("https://vnepg.site")) {
-        return url.replace("https://vnepg.site", "/api-epg");
-      }
+    if (url.startsWith("https://freem3u.xyz")) {
+      return url.replace("https://freem3u.xyz", "/api-playlist");
+    }
+    if (url.startsWith("https://vnepg.site")) {
+      return url.replace("https://vnepg.site", "/api-epg");
     }
     return url;
   }
