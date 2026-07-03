@@ -6,7 +6,14 @@ export default async function handler(request) {
   const urlObj = new URL(request.url);
   
   // Reconstruct path and query parameters
-  const path = urlObj.searchParams.get("path") || "";
+  let path = urlObj.searchParams.get("path") || "";
+  if (!path) {
+    if (urlObj.pathname.startsWith("/api-playlist/")) {
+      path = urlObj.pathname.substring("/api-playlist/".length);
+    } else if (urlObj.pathname.startsWith("/api/playlist/")) {
+      path = urlObj.pathname.substring("/api/playlist/".length);
+    }
+  }
   
   // Copy search params and delete "path"
   const queryParams = new URLSearchParams(urlObj.searchParams);
