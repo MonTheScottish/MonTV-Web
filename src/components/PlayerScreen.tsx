@@ -104,8 +104,16 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     const updateEpg = () => {
       const epg = repository.getEPGForChannel(currentChannel.tvgId, currentChannel.id);
       if (epg && epg.length > 0) {
-        const now = new Date().toISOString();
-        const activeProg = epg.find((p) => now >= p.start && now <= p.stop);
+        const nowMs = Date.now();
+        const activeProg = epg.find((p) => {
+          try {
+            const startMs = new Date(p.start).getTime();
+            const stopMs = new Date(p.stop).getTime();
+            return nowMs >= startMs && nowMs <= stopMs;
+          } catch {
+            return false;
+          }
+        });
         setCurrentProgram(activeProg || epg[0] || null);
       } else {
         setCurrentProgram(null);
@@ -339,11 +347,15 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     };
   }, [currentChannel, channelList]);
 
-  // Listen for videoState events from shaka.html iframe
+  // Listen for videoState and userInteraction events from shaka.html iframe
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
-      if (e.data && e.data.type === "videoState") {
-        setIsPlaying(!!e.data.isPlaying);
+      if (e.data) {
+        if (e.data.type === "videoState") {
+          setIsPlaying(!!e.data.isPlaying);
+        } else if (e.data.type === "userInteraction") {
+          resetControlsTimeout();
+        }
       }
     };
     window.addEventListener("message", handleMessage);

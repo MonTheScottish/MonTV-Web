@@ -378,13 +378,26 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
     return repository.getEPGForChannel(focusedChannel.tvgId, focusedChannel.id);
   }, [focusedChannel, epgLoaded]);
 
-  const nowString = useMemo(() => new Date(nowMillis).toISOString(), [nowMillis]);
-
   const { activeProgram, futurePrograms } = useMemo(() => {
-    const active = epgPrograms.find((p) => nowString >= p.start && nowString <= p.stop);
-    const future = epgPrograms.filter((p) => p.start > nowString);
+    const active = epgPrograms.find((p) => {
+      try {
+        const startMs = new Date(p.start).getTime();
+        const stopMs = new Date(p.stop).getTime();
+        return nowMillis >= startMs && nowMillis <= stopMs;
+      } catch {
+        return false;
+      }
+    });
+    const future = epgPrograms.filter((p) => {
+      try {
+        const startMs = new Date(p.start).getTime();
+        return startMs > nowMillis;
+      } catch {
+        return false;
+      }
+    });
     return { activeProgram: active || null, futurePrograms: future.slice(0, 5) };
-  }, [epgPrograms, nowString]);
+  }, [epgPrograms, nowMillis]);
 
   const formatHeaderDateTime = (timeMs: number): string => {
     const date = new Date(timeMs);

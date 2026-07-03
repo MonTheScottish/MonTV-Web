@@ -65,6 +65,13 @@
         });
       }
 
+      // Notify parent on user interaction (to keep React overlay active)
+      const notifyInteraction = () => {
+        window.parent.postMessage({ type: 'userInteraction' }, '*');
+      };
+      document.addEventListener('mousemove', notifyInteraction);
+      document.addEventListener('click', notifyInteraction);
+
       // Sync state back to parent window
       video.addEventListener('play', () => {
         window.parent.postMessage({ type: 'videoState', isPlaying: true }, '*');
