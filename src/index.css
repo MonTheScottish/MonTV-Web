@@ -13,6 +13,7 @@
   --color-border: rgba(255, 255, 255, 0.08); /* colorStroke1 */
   --color-accent: #107c41;             /* colorPaletteGreenBackground1 */
   --color-accent-blue: #0078d4;        /* colorBrandBackground */
+  --color-accent-blue-fg: #8ab4f8;     /* Light blue for accessible text in Dark Mode */
   --color-destructive: #d83b01;        /* colorPaletteRedBackground1 */
   --font-sans: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --transition-fast: 0.1s cubic-bezier(0.1, 0.9, 0.2, 1);
@@ -44,6 +45,7 @@
   --color-border: rgba(0, 0, 0, 0.08); /* colorStroke1 */
   --color-accent: #107c41;             /* colorPaletteGreenBackground1 */
   --color-accent-blue: #0078d4;        /* colorBrandBackground */
+  --color-accent-blue-fg: #0078d4;     /* Standard dark blue for accessible text in Light Mode */
   --color-destructive: #d83b01;        /* colorPaletteRedBackground1 */
 
   /* Transparent overlay helpers mapped for Light Theme */

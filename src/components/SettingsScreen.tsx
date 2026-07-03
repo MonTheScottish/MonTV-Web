@@ -198,7 +198,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             gap: "24px",
           }}
         >
-          <h2 style={{ fontSize: "18px", fontWeight: 600, borderBottom: "1px solid var(--color-border)", paddingBottom: "10px", color: "var(--color-accent-blue)" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, borderBottom: "1px solid var(--color-border)", paddingBottom: "10px", color: "var(--color-accent-blue-fg)" }}>
             Cấu hình nguồn kênh
           </h2>
 
@@ -302,7 +302,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             Xóa danh sách kênh xem gần đây
           </button>
 
-          <h2 style={{ fontSize: "18px", fontWeight: 600, borderBottom: "1px solid var(--color-border)", paddingBottom: "10px", marginTop: "12px", color: "var(--color-accent-blue)" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, borderBottom: "1px solid var(--color-border)", paddingBottom: "10px", marginTop: "12px", color: "var(--color-accent-blue-fg)" }}>
             Đồng bộ & Sao lưu
           </h2>
 
@@ -352,7 +352,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
             {configCode && (
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
-                <label style={{ fontSize: "12px", color: "var(--color-accent-blue)", fontWeight: 600 }}>Mã cấu hình của bạn:</label>
+                <label style={{ fontSize: "12px", color: "var(--color-accent-blue-fg)", fontWeight: 600 }}>Mã cấu hình của bạn:</label>
                 <textarea
                   readOnly
                   value={configCode}
@@ -391,7 +391,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
             {showImportArea && (
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
-                <label style={{ fontSize: "12px", color: "var(--color-accent-blue)", fontWeight: 600 }}>Dán mã cấu hình vào đây:</label>
+                <label style={{ fontSize: "12px", color: "var(--color-accent-blue-fg)", fontWeight: 600 }}>Dán mã cấu hình vào đây:</label>
                 <textarea
                   placeholder="Dán đoạn mã cấu hình đã sao chép..."
                   value={importCode}
@@ -482,7 +482,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
             <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "10px" }}>
               <span style={{ color: "var(--color-muted)" }}>Hỗ trợ</span>
-              <span style={{ fontWeight: 600, color: "var(--color-accent-blue)" }}>Phím bấm điều khiển từ xa (TV Remote)</span>
+              <span style={{ fontWeight: 600, color: "var(--color-accent-blue-fg)" }}>Phím bấm điều khiển từ xa (TV Remote)</span>
             </div>
           </div>
 

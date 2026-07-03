@@ -532,7 +532,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
           <button
             onClick={onOpenSettings}
             title="Thiết lập"
-            aria-label="Cài đặt hệ thống"
+            aria-label="Thiết lập"
             style={{
               background: "none",
               border: "1px solid var(--color-border)",
@@ -615,7 +615,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                     alignItems: "center",
                     gap: "8px",
                     position: "relative",
-                    color: isActive ? "var(--color-accent-blue)" : "var(--color-on-background)",
+                    color: isActive ? "var(--color-accent-blue-fg)" : "var(--color-on-background)",
                     backgroundColor: isMobile ? "transparent" : (isActive ? "var(--color-surface-hover)" : "transparent"),
                     transition: "all 0.15s ease",
                   }}
@@ -890,7 +890,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                   style={{
                     fontSize: "14px",
                     fontWeight: 600,
-                    color: "var(--color-accent-blue)",
+                    color: "var(--color-accent-blue-fg)",
                     marginBottom: "16px",
                     display: "flex",
                     alignItems: "center",
