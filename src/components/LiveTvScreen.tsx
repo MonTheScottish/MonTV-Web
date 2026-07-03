@@ -580,10 +580,12 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
               {/* Channel Preview Panel (Left) */}
               <div
                 style={{
-                  padding: "24px",
+                  flex: 1,
+                  padding: "24px 32px",
                   display: "flex",
-                  gap: "24px",
+                  gap: "32px",
                   alignItems: "center",
+                  justifyContent: "center",
                   borderRight: "1px solid var(--color-border)",
                 }}
               >
@@ -656,7 +658,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                       )}
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: "0 0 350px", minWidth: 0 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minWidth: 0, maxWidth: "450px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <span
                           style={{
@@ -759,7 +761,8 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
               {/* EPG Schedules Panel (Right) */}
               <div
                 style={{
-                  flex: 1,
+                  width: "380px",
+                  minWidth: "380px",
                   padding: "24px",
                   display: "flex",
                   flexDirection: "column",

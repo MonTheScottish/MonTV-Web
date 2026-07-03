@@ -3,7 +3,7 @@ import { parseM3U, parseJSON } from "./playlistParser";
 import { parseEPGXml } from "./epgParser";
 
 export const DEFAULT_PLAYLIST_URL = "https://freem3u.xyz/api/channels/x_1.0.1/app.json";
-export const VNEPG_EPG_URL = "https://vnepg.site/epg.xml.gz";
+export const VNEPG_EPG_URL = "https://epg.pw/xmltv/epg_VN.xml";
 export const BACKUP_M3U_URLS = [
   "https://iptv-org.github.io/iptv/countries/vn.m3u",
   "https://iptv-org.github.io/iptv/languages/vie.m3u",
@@ -195,6 +195,9 @@ export class MonTVRepository {
     return stripped
       .replace(/[^a-z0-9\s]/g, "")
       .replace(/\s+/g, "")
+      .replace("hd", "")
+      .replace("sd", "")
+      .replace("fhd", "")
       .trim();
   }
 
@@ -377,9 +380,10 @@ export class MonTVRepository {
 
       if (onProgress) onProgress(0.2);
 
-      // Decompress gzip body stream
+      // Decompress gzip body stream if needed
+      const isGzip = VNEPG_EPG_URL.endsWith(".gz") || res.headers.get("content-encoding") === "gzip";
       let xmlText = "";
-      if (res.body) {
+      if (isGzip && res.body) {
         try {
           const ds = new DecompressionStream("gzip");
           const decompressedStream = res.body.pipeThrough(ds);
