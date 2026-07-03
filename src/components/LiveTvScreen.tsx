@@ -572,7 +572,6 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
             <div
               style={{
                 display: "flex",
-                height: "400px",
                 borderBottom: "1px solid var(--color-border)",
                 backgroundColor: "rgba(0, 0, 0, 0.05)",
               }}
@@ -581,11 +580,10 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
               <div
                 style={{
                   flex: 1,
-                  padding: "24px 32px",
+                  padding: "24px",
                   display: "flex",
-                  gap: "32px",
+                  gap: "24px",
                   alignItems: "center",
-                  justifyContent: "center",
                   borderRight: "1px solid var(--color-border)",
                 }}
               >
@@ -658,7 +656,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                       )}
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minWidth: 0, maxWidth: "450px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <span
                           style={{
