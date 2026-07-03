@@ -1,0 +1,644 @@
+import React, { useEffect, useState, useMemo } from "react";
+import type { Channel } from "../types";
+import { MonTVRepository } from "../services/repository";
+import { Tv, Heart, Clock, Settings, Search, Play, Star, List, AlertCircle, RefreshCw } from "lucide-react";
+
+interface LiveTvScreenProps {
+  repository: MonTVRepository;
+  playlistUrl: string;
+  selectedCategory: string;
+  onCategorySelected: (category: string) => void;
+  lastFocusedChannelId: string | null;
+  onFocusedChannelChanged: (id: string | null) => void;
+  onPlayChannel: (channel: Channel, list: Channel[]) => void;
+  onOpenSettings: () => void;
+}
+
+export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
+  repository,
+  playlistUrl,
+  selectedCategory,
+  onCategorySelected,
+  lastFocusedChannelId,
+  onFocusedChannelChanged,
+  onPlayChannel,
+  onOpenSettings,
+}) => {
+  const [allChannels, setAllChannels] = useState<Channel[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [recents, setRecents] = useState<string[]>([]);
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [epgLoaded, setEpgLoaded] = useState(false);
+
+  // Search and Focus states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [focusedChannel, setFocusedChannel] = useState<Channel | null>(null);
+
+  // Time state for TopBar
+  const [nowMillis, setNowMillis] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowMillis(Date.now());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Fetch Channels & EPG
+  const loadData = async (force = false) => {
+    setIsLoading(true);
+    setErrorMsg(null);
+    setEpgLoaded(false);
+
+    try {
+      const list = await repository.fetchChannels(playlistUrl, force);
+      setAllChannels(list);
+      setFavorites(repository.getFavorites());
+      setRecents(repository.getRecentChannelIds());
+      setIsLoading(false);
+
+      // Load EPG in background
+      repository.loadEPG(force).then(() => {
+        setEpgLoaded(true);
+        // Force update of current focused channel EPG
+        if (focusedChannel) {
+          const freshChannel = list.find((c) => c.id === focusedChannel.id);
+          if (freshChannel) setFocusedChannel(freshChannel);
+        }
+      }).catch((e) => {
+        console.error("EPG fetch failed:", e);
+      });
+    } catch (e: any) {
+      setIsLoading(false);
+      setErrorMsg(e.message || "Tải danh sách kênh thất bại.");
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [playlistUrl]);
+
+  // Extract Categories
+  const categories = useMemo(() => {
+    const fixed = ["Tất cả kênh", "Yêu thích", "Đang xem"];
+    const groups = Array.from(new Set(allChannels.map((c) => c.groupTitle))).filter(
+      (g) => g && !fixed.includes(g)
+    );
+    return [...fixed, ...groups];
+  }, [allChannels]);
+
+  // Filter Channels by Category & Search Query
+  const displayedChannels = useMemo(() => {
+    let filtered = allChannels;
+
+    if (selectedCategory === "Yêu thích") {
+      filtered = allChannels.filter((c) => favorites.has(c.id));
+    } else if (selectedCategory === "Đang xem") {
+      const recentSet = new Set(recents);
+      const recentMap = allChannels.filter((c) => recentSet.has(c.id)).reduce<Record<string, Channel>>((acc, c) => {
+        acc[c.id] = c;
+        return acc;
+      }, {});
+      filtered = recents.map((id) => recentMap[id]).filter(Boolean);
+    } else if (selectedCategory !== "Tất cả kênh") {
+      filtered = allChannels.filter((c) => c.groupTitle === selectedCategory);
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((c) => c.name.toLowerCase().includes(query));
+    }
+
+    return filtered;
+  }, [allChannels, selectedCategory, favorites, recents, searchQuery]);
+
+  // Set initial focused channel
+  useEffect(() => {
+    if (displayedChannels.length > 0) {
+      if (lastFocusedChannelId) {
+        const found = displayedChannels.find((c) => c.id === lastFocusedChannelId);
+        setFocusedChannel(found || displayedChannels[0]);
+      } else {
+        setFocusedChannel(displayedChannels[0]);
+      }
+    } else {
+      setFocusedChannel(null);
+    }
+  }, [displayedChannels, lastFocusedChannelId]);
+
+  const handleChannelFocus = (channel: Channel) => {
+    setFocusedChannel(channel);
+    onFocusedChannelChanged(channel.id);
+  };
+
+  const toggleFavorite = (e: React.MouseEvent, channelId: string) => {
+    e.stopPropagation();
+    const updated = new Set(favorites);
+    if (updated.has(channelId)) {
+      repository.removeFavorite(channelId);
+      updated.delete(channelId);
+    } else {
+      repository.addFavorite(channelId);
+      updated.add(channelId);
+    }
+    setFavorites(updated);
+  };
+
+  const handlePlay = (channel: Channel) => {
+    repository.addRecentChannel(channel.id);
+    onPlayChannel(channel, displayedChannels);
+  };
+
+  // EPG Calculations
+  const epgPrograms = useMemo(() => {
+    if (!focusedChannel) return [];
+    return repository.getEPGForChannel(focusedChannel.tvgId, focusedChannel.id);
+  }, [focusedChannel, epgLoaded]);
+
+  const nowString = useMemo(() => new Date(nowMillis).toISOString(), [nowMillis]);
+
+  const { activeProgram, futurePrograms } = useMemo(() => {
+    const active = epgPrograms.find((p) => nowString >= p.start && nowString <= p.stop);
+    const future = epgPrograms.filter((p) => p.start > nowString);
+    return { activeProgram: active || null, futurePrograms: future.slice(0, 5) };
+  }, [epgPrograms, nowString]);
+
+  const formatHeaderDateTime = (timeMs: number): string => {
+    const date = new Date(timeMs);
+    const days = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+    const dayName = days[date.getDay()];
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${dayName}, ${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}  ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
+
+  const formatTimeRange = (startStr: string, stopStr: string): string => {
+    try {
+      const st = new Date(startStr);
+      const sp = new Date(stopStr);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${pad(st.getHours())}:${pad(st.getMinutes())} - ${pad(sp.getHours())}:${pad(sp.getMinutes())}`;
+    } catch {
+      return "";
+    }
+  };
+
+  return (
+    <div
+      className="fade-in"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        width: "100vw",
+        backgroundColor: "var(--color-background)",
+        color: "white",
+        overflow: "hidden",
+      }}
+    >
+      {/* Top Bar */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          height: "64px",
+          padding: "0 24px",
+          backgroundColor: "var(--color-surface)",
+          borderBottom: "1px solid var(--color-border)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Tv size={24} style={{ color: "var(--color-accent-blue)" }} />
+          <span style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "0.5px" }}>
+            Mon<span style={{ color: "var(--color-accent-blue)" }}>TV</span>
+          </span>
+        </div>
+
+        {/* Search & Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div style={{ position: "relative" }}>
+            <Search
+              size={16}
+              style={{
+                position: "absolute",
+                left: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--color-muted)",
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Tìm kiếm kênh..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                padding: "8px 16px 8px 36px",
+                borderRadius: "20px",
+                border: "1px solid var(--color-border)",
+                backgroundColor: "rgba(0, 0, 0, 0.2)",
+                color: "white",
+                fontSize: "13px",
+                outline: "none",
+                width: "220px",
+                transition: "border-color 0.2s",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "var(--color-accent-blue)")}
+              onBlur={(e) => (e.target.style.borderColor = "var(--color-border)")}
+            />
+          </div>
+
+          <button
+            onClick={onOpenSettings}
+            style={{
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "13px",
+              fontWeight: 500,
+              padding: "8px 16px",
+              borderRadius: "18px",
+              backgroundColor: "rgba(255,255,255,0.05)",
+            }}
+          >
+            <Settings size={16} />
+            Thiết lập
+          </button>
+
+          <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
+            {formatHeaderDateTime(nowMillis)}
+          </span>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <RefreshCw className="pulse-badge" size={40} style={{ color: "var(--color-accent-blue)", animationDuration: "1.5s" }} />
+        </div>
+      ) : errorMsg ? (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "16px" }}>
+          <AlertCircle size={40} color="var(--color-destructive)" />
+          <p style={{ fontSize: "16px" }}>{errorMsg}</p>
+          <button
+            onClick={() => loadData(true)}
+            style={{
+              padding: "10px 24px",
+              backgroundColor: "var(--color-secondary)",
+              border: "none",
+              borderRadius: "6px",
+              color: "white",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Thử lại
+          </button>
+        </div>
+      ) : (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* Top Panel - Split between Preview and EPG Details */}
+          <div
+            style={{
+              display: "flex",
+              height: "260px",
+              borderBottom: "1px solid var(--color-border)",
+            }}
+          >
+            {/* Channel Preview Panel (Left) */}
+            <div
+              style={{
+                flex: "0 0 60%",
+                padding: "24px",
+                display: "flex",
+                gap: "24px",
+                alignItems: "center",
+                backgroundColor: "rgba(0,0,0,0.1)",
+              }}
+            >
+              {focusedChannel ? (
+                <>
+                  <div
+                    style={{
+                      width: "140px",
+                      height: "140px",
+                      borderRadius: "16px",
+                      backgroundColor: "rgba(255,255,255,0.03)",
+                      border: "1px solid var(--color-border)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "12px",
+                    }}
+                  >
+                    {focusedChannel.logoUrl ? (
+                      <img
+                        src={focusedChannel.logoUrl}
+                        alt={focusedChannel.name}
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                      />
+                    ) : (
+                      <Tv size={48} style={{ color: "var(--color-muted)" }} />
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span
+                        style={{
+                          backgroundColor: "var(--color-secondary)",
+                          color: "white",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        Kênh {String(focusedChannel.number).padStart(2, "0")}
+                      </span>
+                      <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
+                        {focusedChannel.groupTitle}
+                      </span>
+                    </div>
+
+                    <h2 style={{ fontSize: "24px", fontWeight: 700 }}>{focusedChannel.name}</h2>
+
+                    {activeProgram ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <span style={{ fontSize: "14px", color: "var(--color-accent)", fontWeight: 600 }}>
+                          ĐANG PHÁT: {activeProgram.title}
+                        </span>
+                        <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
+                          {activeProgram.description || "Không có mô tả chi tiết."}
+                        </span>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: "14px", color: "var(--color-muted)" }}>
+                        {epgLoaded
+                          ? "Không có thông tin lịch phát sóng tại thời điểm này."
+                          : "Đang tải lịch phát sóng EPG..."}
+                      </span>
+                    )}
+
+                    <button
+                      onClick={() => handlePlay(focusedChannel)}
+                      style={{
+                        alignSelf: "flex-start",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "10px 24px",
+                        backgroundColor: "var(--color-accent)",
+                        color: "black",
+                        border: "none",
+                        borderRadius: "20px",
+                        fontWeight: 700,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        marginTop: "8px",
+                        boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
+                        transition: "transform 0.15s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                    >
+                      <Play size={16} fill="black" />
+                      XEM NGAY
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ color: "var(--color-muted)" }}>Chọn một kênh bên dưới để hiển thị xem trước</div>
+              )}
+            </div>
+
+            {/* EPG Schedules Panel (Right) */}
+            <div
+              style={{
+                flex: "0 0 40%",
+                padding: "24px",
+                borderLeft: "1px solid var(--color-border)",
+                display: "flex",
+                flexDirection: "column",
+                overflowY: "auto",
+                backgroundColor: "rgba(0,0,0,0.15)",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "var(--color-accent-blue)",
+                  marginBottom: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <Clock size={16} />
+                Chương trình tiếp theo
+              </h3>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {futurePrograms.length > 0 ? (
+                  futurePrograms.map((prog, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "2px",
+                        borderLeft: "2px solid var(--color-border)",
+                        paddingLeft: "12px",
+                      }}
+                    >
+                      <span style={{ fontSize: "11px", color: "var(--color-accent-blue)", fontWeight: 600 }}>
+                        {formatTimeRange(prog.start, prog.stop)}
+                      </span>
+                      <span style={{ fontSize: "13px", fontWeight: 500 }}>{prog.title}</span>
+                    </div>
+                  ))
+                ) : (
+                  <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
+                    Không có thông tin lịch sắp phát sóng.
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Panel - Sidebar Categories & Channels Grid */}
+          <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+            {/* Sidebar Categories */}
+            <div
+              style={{
+                flex: "0 0 200px",
+                borderRight: "1px solid var(--color-border)",
+                backgroundColor: "rgba(0,0,0,0.1)",
+                display: "flex",
+                flexDirection: "column",
+                padding: "16px 8px",
+                overflowY: "auto",
+                gap: "4px",
+              }}
+            >
+              {categories.map((cat) => {
+                const isActive = selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => onCategorySelected(cat)}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      textAlign: "left",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      fontWeight: isActive ? 700 : 500,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      color: isActive ? "white" : "var(--color-muted)",
+                      backgroundColor: isActive ? "var(--color-secondary)" : "transparent",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    {cat === "Tất cả kênh" && <List size={16} />}
+                    {cat === "Yêu thích" && <Heart size={16} />}
+                    {cat === "Đang xem" && <Clock size={16} />}
+                    {cat !== "Tất cả kênh" && cat !== "Yêu thích" && cat !== "Đang xem" && <Tv size={16} />}
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {cat}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Channels Grid */}
+            <div style={{ flex: 1, padding: "24px", overflowY: "auto" }}>
+              {displayedChannels.length > 0 ? (
+                <div className="tv-grid">
+                  {displayedChannels.map((chan) => {
+                    const isFav = favorites.has(chan.id);
+                    const isFocused = focusedChannel?.id === chan.id;
+                    return (
+                      <div
+                        key={chan.id}
+                        onClick={() => handlePlay(chan)}
+                        onMouseEnter={() => handleChannelFocus(chan)}
+                        className="glass-card"
+                        style={{
+                          position: "relative",
+                          borderRadius: "12px",
+                          padding: "16px",
+                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "12px",
+                          border: isFocused ? "2px solid var(--color-accent-blue)" : "1px solid var(--color-border)",
+                          boxShadow: isFocused ? "0 0 15px rgba(138, 180, 248, 0.25)" : "none",
+                          transform: isFocused ? "translateY(-4px)" : "none",
+                        }}
+                      >
+                        {/* Favorite Button Overlay */}
+                        <button
+                          onClick={(e) => toggleFavorite(e, chan.id)}
+                          style={{
+                            position: "absolute",
+                            top: "8px",
+                            right: "8px",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "4px",
+                            borderRadius: "50%",
+                            backgroundColor: "rgba(0,0,0,0.4)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Star
+                            size={14}
+                            fill={isFav ? "var(--color-accent-blue)" : "none"}
+                            color={isFav ? "var(--color-accent-blue)" : "#94a3b8"}
+                          />
+                        </button>
+
+                        <div
+                          style={{
+                            width: "72px",
+                            height: "72px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "8px",
+                            backgroundColor: "rgba(255,255,255,0.03)",
+                            padding: "6px",
+                          }}
+                        >
+                          {chan.logoUrl ? (
+                            <img
+                              src={chan.logoUrl}
+                              alt={chan.name}
+                              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                            />
+                          ) : (
+                            <Tv size={28} style={{ color: "var(--color-muted)" }} />
+                          )}
+                        </div>
+
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            textAlign: "center",
+                            width: "100%",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {chan.name}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "100%",
+                    color: "var(--color-muted)",
+                    fontSize: "14px",
+                  }}
+                >
+                  Không tìm thấy kênh nào phù hợp.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+export default LiveTvScreen;
