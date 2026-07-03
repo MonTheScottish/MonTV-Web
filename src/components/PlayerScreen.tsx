@@ -18,6 +18,13 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   onExit,
 }) => {
   const [currentChannel, setCurrentChannel] = useState<Channel>(initialChannel);
+  
+  const currentIndex = channelList.findIndex((c) => c.id === currentChannel.id);
+  const prevIndex = currentIndex !== -1 ? (currentIndex - 1 + channelList.length) % channelList.length : 0;
+  const nextIndex = currentIndex !== -1 ? (currentIndex + 1) % channelList.length : 0;
+  const prevChannel = channelList[prevIndex];
+  const nextChannel = channelList[nextIndex];
+
   const [streamUrl, setStreamUrl] = useState<string>("");
   const [resolvedHeaders, setResolvedHeaders] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -707,28 +714,19 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
           </div>
 
           {/* Controls Buttons */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <button
-                onClick={togglePlay}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "white",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "50%",
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                }}
-              >
-                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-              </button>
-
-              {/* Source Selector Trigger */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderTop: "1px solid rgba(255,255,255,0.1)",
+              paddingTop: "16px",
+              flexWrap: isMobile ? "wrap" : "nowrap",
+              gap: isMobile ? "12px" : "0",
+            }}
+          >
+            {/* Left: Source Selector */}
+            <div style={{ minWidth: isMobile ? "100%" : "150px", display: "flex", justifyContent: isMobile ? "center" : "flex-start" }}>
               {currentChannel.urls.length > 1 && (
                 <div style={{ position: "relative" }}>
                   <button
@@ -757,7 +755,8 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                       style={{
                         position: "absolute",
                         bottom: "100%",
-                        left: 0,
+                        left: isMobile ? "50%" : 0,
+                        transform: isMobile ? "translateX(-50%)" : "none",
                         marginBottom: "8px",
                         borderRadius: "8px",
                         padding: "6px",
@@ -765,6 +764,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                         display: "flex",
                         flexDirection: "column",
                         gap: "2px",
+                        zIndex: 30,
                       }}
                     >
                       {currentChannel.urls.map((u, i) => (
@@ -803,38 +803,123 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               )}
             </div>
 
-            <div style={{ display: "flex", gap: "16px" }}>
+            {/* Center: Play/Pause & Channel Navigation */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: isMobile ? "10px" : "20px",
+                flex: 1,
+                justifyContent: "center",
+              }}
+            >
+              {/* Previous Channel Button */}
+              {prevChannel && (
+                <button
+                  onClick={() => switchChannel("prev")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    background: "none",
+                    border: "1px solid var(--color-border)",
+                    color: "white",
+                    cursor: "pointer",
+                    padding: isMobile ? "8px 12px" : "8px 16px",
+                    borderRadius: "20px",
+                    backgroundColor: "rgba(255, 255, 255, 0.05)",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)"}
+                >
+                  <ArrowLeft size={16} />
+                  {prevChannel.logoUrl ? (
+                    <img
+                      src={prevChannel.logoUrl}
+                      alt={prevChannel.name}
+                      style={{ width: "24px", height: "24px", objectFit: "contain", borderRadius: "4px" }}
+                    />
+                  ) : (
+                    <Tv size={16} />
+                  )}
+                  <span style={{ fontSize: "13px", fontWeight: 500 }}>
+                    {!isMobile && "Kênh trước: "}{prevChannel.name}
+                  </span>
+                </button>
+              )}
+
+              {/* Play/Pause Center Button */}
               <button
-                onClick={() => switchChannel("prev")}
+                onClick={togglePlay}
                 style={{
                   background: "none",
                   border: "none",
-                  color: "white",
-                  fontSize: "13px",
+                  color: "black",
                   cursor: "pointer",
-                  padding: "8px 16px",
-                  borderRadius: "6px",
-                  backgroundColor: "rgba(255,255,255,0.05)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  backgroundColor: "var(--color-accent-blue)",
+                  boxShadow: "0 0 15px rgba(138, 180, 248, 0.4)",
+                  transition: "transform 0.2s, background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.1)";
+                  e.currentTarget.style.backgroundColor = "#a8c7fa";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.backgroundColor = "var(--color-accent-blue)";
                 }}
               >
-                Kênh trước (Up)
+                {isPlaying ? <Pause size={24} fill="black" /> : <Play size={24} fill="black" style={{ marginLeft: "4px" }} />}
               </button>
-              <button
-                onClick={() => switchChannel("next")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "white",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  padding: "8px 16px",
-                  borderRadius: "6px",
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                }}
-              >
-                Kênh sau (Down)
-              </button>
+
+              {/* Next Channel Button */}
+              {nextChannel && (
+                <button
+                  onClick={() => switchChannel("next")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    background: "none",
+                    border: "1px solid var(--color-border)",
+                    color: "white",
+                    cursor: "pointer",
+                    padding: isMobile ? "8px 12px" : "8px 16px",
+                    borderRadius: "20px",
+                    backgroundColor: "rgba(255, 255, 255, 0.05)",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)"}
+                >
+                  <span style={{ fontSize: "13px", fontWeight: 500 }}>
+                    {!isMobile && "Kênh sau: "}{nextChannel.name}
+                  </span>
+                  {nextChannel.logoUrl ? (
+                    <img
+                      src={nextChannel.logoUrl}
+                      alt={nextChannel.name}
+                      style={{ width: "24px", height: "24px", objectFit: "contain", borderRadius: "4px" }}
+                    />
+                  ) : (
+                    <Tv size={16} />
+                  )}
+                  <span style={{ transform: "rotate(180deg)", display: "inline-block" }}>
+                    <ArrowLeft size={16} />
+                  </span>
+                </button>
+              )}
             </div>
+
+            {/* Right spacer to balance the layout */}
+            {!isMobile && <div style={{ minWidth: "150px" }} />}
           </div>
         </div>
       </div>
