@@ -474,21 +474,42 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "center",
+                          justifyContent: "center",
                           gap: "12px",
+                          width: "100%",
+                          height: "100%",
+                          position: "relative",
                         }}
                       >
-                        {focusedChannel.logoUrl ? (
-                          <img
-                            src={focusedChannel.logoUrl}
-                            alt={focusedChannel.name}
-                            style={{ width: "56px", height: "56px", objectFit: "contain" }}
+                        {focusedChannel.logoUrl && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              width: "120px",
+                              height: "120px",
+                              backgroundImage: `url(${focusedChannel.logoUrl})`,
+                              backgroundSize: "contain",
+                              backgroundPosition: "center",
+                              backgroundRepeat: "no-repeat",
+                              filter: "blur(24px) opacity(0.35)",
+                              zIndex: 0,
+                            }}
                           />
-                        ) : (
-                          <Tv size={36} style={{ color: "var(--color-muted)" }} />
                         )}
-                        <span style={{ fontSize: "11px", color: "var(--color-muted)", animation: "pulse 1.5s infinite" }}>
-                          Đang tải bản xem trước...
-                        </span>
+                        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                          {focusedChannel.logoUrl ? (
+                            <img
+                              src={focusedChannel.logoUrl}
+                              alt={focusedChannel.name}
+                              style={{ width: "56px", height: "56px", objectFit: "contain" }}
+                            />
+                          ) : (
+                            <Tv size={36} style={{ color: "var(--color-muted)" }} />
+                          )}
+                          <span style={{ fontSize: "11px", color: "var(--color-muted)", animation: "pulse 1.5s infinite" }}>
+                            Đang tải bản xem trước...
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
