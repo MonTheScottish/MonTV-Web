@@ -9,6 +9,13 @@ interface MiniPlayerProps {
   repository: MonTVRepository;
 }
 
+const areHeadersEqual = (h1: Record<string, string>, h2: Record<string, string>) => {
+  const k1 = Object.keys(h1);
+  const k2 = Object.keys(h2);
+  if (k1.length !== k2.length) return false;
+  return k1.every((k) => h1[k] === h2[k]);
+};
+
 const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -29,7 +36,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
       sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
     }
     setActiveSourceIndex(sourceIndex);
-  }, [channel]);
+  }, [channel.id]);
 
   // Fetch resolved stream URL when channel or source index changes
   useEffect(() => {
@@ -41,18 +48,19 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
         if (!active) return;
         if (resolved && resolved.url) {
           setStreamUrl(resolved.url);
-          setResolvedHeaders(resolved.headers || {});
+          const nextHeaders = resolved.headers || {};
+          setResolvedHeaders((prev) => areHeadersEqual(prev, nextHeaders) ? prev : nextHeaders);
           setIsWebView(!!resolved.isWebView);
         } else {
           setStreamUrl(channel.streamUrl);
-          setResolvedHeaders({});
+          setResolvedHeaders((prev) => Object.keys(prev).length === 0 ? prev : {});
           setIsWebView(false);
         }
       } catch (e) {
         console.error("MiniPlayer error resolving stream:", e);
         if (active) {
           setStreamUrl(channel.streamUrl);
-          setResolvedHeaders({});
+          setResolvedHeaders((prev) => Object.keys(prev).length === 0 ? prev : {});
           setIsWebView(false);
         }
       }
@@ -61,7 +69,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
     return () => {
       active = false;
     };
-  }, [channel, activeSourceIndex, repository]);
+  }, [channel.id, channel.streamUrl, activeSourceIndex, repository]);
 
   // Fallback switching reference
   const handleStreamFailureRef = useRef<() => void>(() => {});

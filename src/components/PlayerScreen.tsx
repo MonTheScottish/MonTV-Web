@@ -4,6 +4,13 @@ import type { Channel, EPGProgram } from "../types";
 import { MonTVRepository } from "../services/repository";
 import { ArrowLeft, ArrowRight, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw, List, X, Search, Tv, Volume2 } from "lucide-react";
 
+const areHeadersEqual = (h1: Record<string, string>, h2: Record<string, string>) => {
+  const k1 = Object.keys(h1);
+  const k2 = Object.keys(h2);
+  if (k1.length !== k2.length) return false;
+  return k1.every((k) => h1[k] === h2[k]);
+};
+
 interface PlayerScreenProps {
   initialChannel: Channel;
   channelList: Channel[];
@@ -156,19 +163,20 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
 
         if (resolved && resolved.url) {
           setStreamUrl(resolved.url);
-          setResolvedHeaders(resolved.headers || {});
+          const nextHeaders = resolved.headers || {};
+          setResolvedHeaders((prev) => areHeadersEqual(prev, nextHeaders) ? prev : nextHeaders);
           setIsWebView(!!resolved.isWebView);
         } else {
           // Fallback to direct streamUrl
           setStreamUrl(currentChannel.streamUrl);
-          setResolvedHeaders({});
+          setResolvedHeaders((prev) => Object.keys(prev).length === 0 ? prev : {});
           setIsWebView(false);
         }
       } catch (e) {
         console.error("Error resolving stream:", e);
         if (active) {
           setStreamUrl(currentChannel.streamUrl);
-          setResolvedHeaders({});
+          setResolvedHeaders((prev) => Object.keys(prev).length === 0 ? prev : {});
           setIsWebView(false);
         }
       }
@@ -181,29 +189,25 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       const epg = repository.getEPGForChannel(currentChannel.tvgId, currentChannel.id);
       if (epg && epg.length > 0) {
         const nowMs = Date.now();
-        const activeProg = epg.find((p) => {
-          try {
-            const startMs = new Date(p.start).getTime();
-            const stopMs = new Date(p.stop).getTime();
-            return nowMs >= startMs && nowMs <= stopMs;
-          } catch {
-            return false;
-          }
+        const current = epg.find((p) => {
+          const startMs = new Date(p.start).getTime();
+          const stopMs = new Date(p.stop).getTime();
+          return nowMs >= startMs && nowMs <= stopMs;
         });
-        setCurrentProgram(activeProg || epg[0] || null);
+        setCurrentProgram(current || null);
       } else {
         setCurrentProgram(null);
       }
     };
 
     updateEpg();
-    const interval = setInterval(updateEpg, 30000);
+    const interval = setInterval(updateEpg, 30000); // Check EPG every 30s
 
     return () => {
       active = false;
       clearInterval(interval);
     };
-  }, [currentChannel, activeSourceIndex, repository]);
+  }, [currentChannel.id, currentChannel.streamUrl, activeSourceIndex, repository]);
 
   // Define automatic fallback switching handler with Ref to bypass closures
   const handleStreamFailureRef = useRef<() => void>(() => {});
