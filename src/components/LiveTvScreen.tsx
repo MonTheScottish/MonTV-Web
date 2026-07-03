@@ -450,7 +450,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
         height: "100vh",
         width: "100vw",
         backgroundColor: "var(--color-background)",
-        color: "white",
+        color: "var(--color-on-background)",
         overflow: "hidden",
       }}
     >
@@ -606,7 +606,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                     padding: isMobile ? "8px 14px" : "10px 16px",
                     textAlign: "left",
                     border: "none",
-                    borderRadius: "8px",
+                    borderRadius: isMobile ? "0px" : "8px",
                     fontSize: "13px",
                     fontWeight: isActive ? 600 : 500,
                     cursor: "pointer",
@@ -615,14 +615,14 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                     gap: "8px",
                     position: "relative",
                     color: isActive ? "var(--color-accent-blue)" : "var(--color-on-background)",
-                    backgroundColor: isActive ? "var(--color-surface-hover)" : "transparent",
+                    backgroundColor: isMobile ? "transparent" : (isActive ? "var(--color-surface-hover)" : "transparent"),
                     transition: "all 0.15s ease",
                   }}
                   onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.backgroundColor = "var(--color-surface-hover)";
+                    if (!isMobile && !isActive) e.currentTarget.style.backgroundColor = "var(--color-surface-hover)";
                   }}
                   onMouseLeave={(e) => {
-                    if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
+                    if (!isMobile && !isActive) e.currentTarget.style.backgroundColor = "transparent";
                   }}
                 >
                   {/* Active vertical line indicator for desktop */}
@@ -637,6 +637,20 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                         height: "16px",
                         borderRadius: "2px",
                         backgroundColor: "var(--color-accent-blue)",
+                      }}
+                    />
+                  )}
+                  {/* Active horizontal line indicator for mobile pivots */}
+                  {isMobile && isActive && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: "0",
+                        left: "14px",
+                        right: "14px",
+                        height: "2.5px",
+                        backgroundColor: "var(--color-accent-blue)",
+                        borderRadius: "1px",
                       }}
                     />
                   )}
@@ -957,8 +971,18 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                     return (
                       <div
                         key={chan.id}
-                        onClick={() => handleChannelFocus(chan)}
-                        onDoubleClick={() => handlePlay(chan)}
+                        onClick={() => {
+                          if (isMobile) {
+                            handlePlay(chan);
+                          } else {
+                            handleChannelFocus(chan);
+                          }
+                        }}
+                        onDoubleClick={() => {
+                          if (!isMobile) {
+                            handlePlay(chan);
+                          }
+                        }}
                         className="glass-card"
                         style={{
                           position: "relative",
