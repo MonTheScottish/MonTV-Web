@@ -3,7 +3,7 @@ import { parseM3U, parseJSON } from "./playlistParser";
 import { parseEPGXml } from "./epgParser";
 
 export const DEFAULT_PLAYLIST_URL = "https://freem3u.xyz/api/channels/x_1.0.1/app.json";
-export const VNEPG_EPG_URL = "https://vnepg.site/epg.xml.gz";
+export const VNEPG_EPG_URL = "/epg.xml.gz";
 export const BACKUP_M3U_URLS = [
   "https://iptv-org.github.io/iptv/countries/vn.m3u",
   "https://iptv-org.github.io/iptv/languages/vie.m3u",

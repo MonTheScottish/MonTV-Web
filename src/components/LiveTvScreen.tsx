@@ -169,9 +169,10 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
   }, [streamUrl, resolvedHeaders, activeSourceIndex, channel.id, channel.name, isWebView]);
 
   if (isWebView) {
+    const previewUrl = streamUrl ? (streamUrl + (streamUrl.includes("?") ? "&muted=true" : "?muted=true")) : "";
     return (
       <iframe
-        src={streamUrl}
+        src={previewUrl}
         style={{
           width: "100%",
           height: "100%",

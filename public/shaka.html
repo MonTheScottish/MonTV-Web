@@ -131,10 +131,22 @@
         });
       }
 
+      // Apply muted parameter if requested
+      const isMuted = urlParams.get('muted') === 'true';
+      if (isMuted) {
+        video.muted = true;
+      }
+
       // Load video
       try {
         await player.load(videoUrl);
         console.log('Video loaded successfully.');
+        // Ensure play triggers, fallback to muted if browser blocks autoplay
+        video.play().catch((err) => {
+          console.warn("Autoplay blocked, falling back to muted play:", err);
+          video.muted = true;
+          video.play().catch(console.error);
+        });
       } catch (e) {
         console.error('Error loading video:', e);
         showError("Lỗi tải luồng phát.");
