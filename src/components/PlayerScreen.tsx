@@ -666,15 +666,16 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                 background: "none",
                 border: "none",
                 color: "white",
-                fontSize: "14px",
+                fontSize: isMobile ? "12px" : "14px",
                 fontWeight: 600,
                 cursor: "pointer",
-                padding: "8px 16px",
+                padding: isMobile ? "6px 12px" : "8px 16px",
                 borderRadius: "20px",
                 backgroundColor: "rgba(255,255,255,0.08)",
+                whiteSpace: "nowrap",
               }}
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={isMobile ? 16 : 18} />
               Quay lại
             </button>
 
@@ -686,28 +687,31 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                 gap: "8px",
                 background: "none",
                 color: "white",
-                fontSize: "14px",
+                fontSize: isMobile ? "12px" : "14px",
                 fontWeight: 600,
                 cursor: "pointer",
-                padding: "8px 16px",
+                padding: isMobile ? "6px 12px" : "8px 16px",
                 borderRadius: "20px",
                 backgroundColor: "rgba(138, 180, 248, 0.15)",
                 border: "1px solid rgba(138, 180, 248, 0.3)",
+                whiteSpace: "nowrap",
               }}
             >
-              <List size={18} style={{ color: "var(--color-accent-blue)" }} />
+              <List size={isMobile ? 16 : 18} style={{ color: "var(--color-accent-blue)" }} />
               Danh sách kênh
             </button>
           </div>
 
           <div
             style={{
-              fontSize: "13px",
+              fontSize: isMobile ? "11px" : "13px",
               color: "var(--color-muted)",
               backgroundColor: "rgba(0,0,0,0.4)",
               padding: "6px 12px",
               borderRadius: "4px",
               border: "1px solid var(--color-border)",
+              display: isMobile ? "none" : "block",
+              whiteSpace: "nowrap",
             }}
           >
             Đang phát ở định dạng HLS
