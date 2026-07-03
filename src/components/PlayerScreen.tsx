@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import type { Channel, EPGProgram } from "../types";
 import { MonTVRepository } from "../services/repository";
-import { ArrowLeft, ArrowRight, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw, List, X, Search, Tv } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw, List, X, Search, Tv, Volume2 } from "lucide-react";
 
 interface PlayerScreenProps {
   initialChannel: Channel;
@@ -45,11 +45,51 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   const [drawerSearch, setDrawerSearch] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
+  // Volume states
+  const [volume, setVolume] = useState(1.0);
+  const [showVolumeIndicator, setShowVolumeIndicator] = useState(false);
+  const volumeTimeoutRef = useRef<any>(null);
+  const isVolumeMounted = useRef(false);
+
+  const triggerVolumeIndicator = () => {
+    setShowVolumeIndicator(true);
+    if (volumeTimeoutRef.current) {
+      clearTimeout(volumeTimeoutRef.current);
+    }
+    volumeTimeoutRef.current = setTimeout(() => {
+      setShowVolumeIndicator(false);
+    }, 1200);
+  };
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Sync volume changes to standard video elements and shaka iframe
+  useEffect(() => {
+    if (isWebView) {
+      const iframe = iframeRef.current;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: "control", action: "setVolume", value: volume }, "*");
+      }
+    } else {
+      const video = videoRef.current;
+      if (video) {
+        video.volume = volume;
+        if (volume > 0) {
+          video.muted = false;
+        }
+      }
+    }
+
+    if (isVolumeMounted.current) {
+      triggerVolumeIndicator();
+    } else {
+      isVolumeMounted.current = true;
+    }
+  }, [volume, isWebView]);
 
   // EPG
   const [currentProgram, setCurrentProgram] = useState<EPGProgram | null>(null);
@@ -352,13 +392,21 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       resetControlsTimeout();
 
       switch (e.key) {
-        case "ArrowUp":
+        case "ArrowLeft":
           e.preventDefault();
           switchChannel("prev");
           break;
-        case "ArrowDown":
+        case "ArrowRight":
           e.preventDefault();
           switchChannel("next");
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setVolume((prev) => Math.min(prev + 0.05, 1.0));
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          setVolume((prev) => Math.max(prev - 0.05, 0.0));
           break;
         case "Escape":
         case "Backspace":
@@ -1117,6 +1165,35 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
           )}
         </div>
       </div>
+
+      {/* Volume Indicator Overlay */}
+      {showVolumeIndicator && (
+        <div
+          style={{
+            position: "absolute",
+            top: "80px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            color: "white",
+            padding: "10px 20px",
+            borderRadius: "20px",
+            fontSize: "14px",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            zIndex: 40,
+            pointerEvents: "none",
+            animation: "fadeIn 0.2s",
+            border: "1px solid var(--color-border)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <Volume2 size={16} style={{ color: "var(--color-accent-blue)" }} />
+          <span>Âm lượng: {Math.round(volume * 100)}%</span>
+        </div>
+      )}
     </div>
   );
 };

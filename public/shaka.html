@@ -83,7 +83,7 @@
         window.parent.postMessage({ type: 'videoState', isPlaying: true }, '*');
       });
 
-      // Handle play/pause commands from parent window
+      // Handle play/pause and volume commands from parent window
       window.addEventListener('message', (e) => {
         if (e.data && e.data.type === 'control') {
           if (e.data.action === 'play') {
@@ -95,6 +95,11 @@
               video.play().catch(console.error);
             } else {
               video.pause();
+            }
+          } else if (e.data.action === 'setVolume') {
+            video.volume = e.data.value;
+            if (video.volume > 0) {
+              video.muted = false;
             }
           }
         }
