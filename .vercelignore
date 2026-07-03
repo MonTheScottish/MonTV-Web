@@ -1,0 +1,16 @@
+# Exclude git and editor settings
+.git
+.github
+.vscode
+.idea
+.gemini
+.agents
+.gitattributes
+
+# Exclude dependencies and logs
+node_modules
+*.log
+
+# Exclude local build assets if any
+dist
+dist-ssr
