@@ -447,7 +447,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
       style={{
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: "100dvh",
         width: "100vw",
         backgroundColor: "var(--color-background)",
         color: "var(--color-on-background)",
@@ -460,8 +460,8 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          height: "64px",
-          padding: isMobile ? "0 12px" : "0 24px",
+          height: isMobile ? "auto" : "64px",
+          padding: isMobile ? "8px 12px" : "0 24px",
           backgroundColor: "var(--color-surface)",
           borderBottom: "1px solid var(--color-border)",
         }}
@@ -962,7 +962,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
             </div>
 
             {/* Bottom Channels Grid */}
-            <div style={{ flex: 1, padding: isMobile ? "12px" : "16px", overflowY: "auto" }}>
+            <div style={{ flex: 1, padding: isMobile ? "12px 12px 80px 12px" : "16px", overflowY: "auto" }}>
               {displayedChannels.length > 0 ? (
                 <div className="tv-grid">
                   {displayedChannels.map((chan) => {

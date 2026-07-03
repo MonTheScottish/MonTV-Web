@@ -526,7 +526,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       style={{
         position: "relative",
         width: "100vw",
-        height: "100vh",
+        height: "100dvh",
         backgroundColor: "black",
         overflow: "hidden",
       }}
