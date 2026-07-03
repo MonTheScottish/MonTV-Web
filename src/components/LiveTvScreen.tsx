@@ -187,6 +187,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
     return (
       <iframe
         src={previewUrl}
+        title={`Trình phát thu nhỏ kênh ${channel.name}`}
         style={{
           width: "100%",
           height: "100%",
@@ -509,6 +510,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
           <button
             onClick={toggleTheme}
             title={theme === "dark" ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
+            aria-label={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
             style={{
               background: "none",
               border: "1px solid var(--color-border)",
@@ -530,6 +532,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
           <button
             onClick={onOpenSettings}
             title="Thiết lập"
+            aria-label="Cài đặt hệ thống"
             style={{
               background: "none",
               border: "1px solid var(--color-border)",
@@ -1011,6 +1014,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                           {/* Favorite Button Overlay */}
                           <button
                             onClick={(e) => toggleFavorite(e, chan.id)}
+                            aria-label={isFav ? `Xóa ${chan.name} khỏi danh sách yêu thích` : `Thêm ${chan.name} vào danh sách yêu thích`}
                             style={{
                               position: "absolute",
                               top: "4px",
@@ -1030,7 +1034,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                             <Star
                               size={10}
                               fill={isFav ? "var(--color-accent-blue)" : "none"}
-                              color={isFav ? "var(--color-accent-blue)" : "#94a3b8"}
+                              color={isFav ? "var(--color-accent-blue)" : "#adadad"}
                             />
                           </button>
 
@@ -1102,6 +1106,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                           {/* Favorite Button Overlay */}
                           <button
                             onClick={(e) => toggleFavorite(e, chan.id)}
+                            aria-label={isFav ? `Xóa ${chan.name} khỏi danh sách yêu thích` : `Thêm ${chan.name} vào danh sách yêu thích`}
                             style={{
                               position: "absolute",
                               top: "8px",
@@ -1120,7 +1125,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                             <Star
                               size={14}
                               fill={isFav ? "var(--color-accent-blue)" : "none"}
-                              color={isFav ? "var(--color-accent-blue)" : "#94a3b8"}
+                              color={isFav ? "var(--color-accent-blue)" : "#adadad"}
                             />
                           </button>
 

@@ -605,6 +605,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
         <iframe
           ref={iframeRef}
           src={streamUrl}
+          title={`Trình phát toàn màn hình kênh ${currentChannel.name}`}
           style={{
             width: "100%",
             height: "100%",
@@ -843,7 +844,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                 <span
                   style={{
                     backgroundColor: "var(--color-accent-blue)",
-                    color: "black",
+                    color: "white",
                     fontWeight: 800,
                     fontSize: "11px",
                     padding: "2px 6px",
@@ -977,6 +978,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                 <button
                   onClick={() => switchChannel("prev")}
                   title={`Kênh trước: ${prevChannel.name}`}
+                  aria-label={`Kênh trước: ${prevChannel.name}`}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -1009,6 +1011,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               {/* Play/Pause Center Button */}
               <button
                 onClick={togglePlay}
+                aria-label={isPlaying ? "Tạm dừng" : "Phát"}
                 style={{
                   background: "none",
                   border: "none",
@@ -1041,6 +1044,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                 <button
                   onClick={() => switchChannel("next")}
                   title={`Kênh sau: ${nextChannel.name}`}
+                  aria-label={`Kênh sau: ${nextChannel.name}`}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -1129,6 +1133,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
             </span>
             <button
               onClick={() => setShowChannelDrawer(false)}
+              aria-label="Đóng danh sách kênh"
               style={{
                 background: "none",
                 border: "none",

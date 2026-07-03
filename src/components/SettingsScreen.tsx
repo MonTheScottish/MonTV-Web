@@ -154,6 +154,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         >
           <button
             onClick={onBack}
+            aria-label="Quay lại danh sách kênh"
             style={{
               background: "none",
               border: "1px solid var(--color-border)",

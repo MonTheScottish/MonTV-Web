@@ -58,7 +58,7 @@ function App() {
   };
 
   return (
-    <>
+    <main id="main-content" style={{ width: "100%", height: "100%" }}>
       {screen === "splash" && (
         <SplashScreen
           repository={repository}
@@ -96,7 +96,7 @@ function App() {
           onBack={handleSettingsBack}
         />
       )}
-    </>
+    </main>
   );
 }
 
