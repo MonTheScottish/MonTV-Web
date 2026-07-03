@@ -597,33 +597,51 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                   style={{
                     width: isMobile ? "auto" : "100%",
                     flexShrink: 0,
-                    padding: isMobile ? "8px 14px" : "12px 16px",
+                    padding: isMobile ? "8px 14px" : "10px 16px",
                     textAlign: "left",
                     border: "none",
                     borderRadius: "8px",
                     fontSize: "13px",
-                    fontWeight: isActive ? 700 : 500,
+                    fontWeight: isActive ? 600 : 500,
                     cursor: "pointer",
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "8px",
-                    color: isActive ? "white" : "var(--color-muted)",
-                    backgroundColor: isActive ? "var(--color-secondary)" : "transparent",
-                    transition: "all 0.15s",
+                    position: "relative",
+                    color: isActive ? "var(--color-accent-blue)" : "var(--color-on-background)",
+                    backgroundColor: isActive ? "var(--color-surface-hover)" : "transparent",
+                    transition: "all 0.15s ease",
                   }}
                   onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
+                    if (!isActive) e.currentTarget.style.backgroundColor = "var(--color-surface-hover)";
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
                   }}
                 >
-                  {cat === "Tất cả kênh" && <List size={16} />}
-                  {cat === "Yêu thích" && <Heart size={16} />}
-                  {cat === "Đang xem" && <Clock size={16} />}
-                  {cat !== "Tất cả kênh" && cat !== "Yêu thích" && cat !== "Đang xem" && <Tv size={16} />}
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {cat}
+                  {/* Active vertical line indicator for desktop */}
+                  {!isMobile && isActive && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: "4px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: "3px",
+                        height: "16px",
+                        borderRadius: "2px",
+                        backgroundColor: "var(--color-accent-blue)",
+                      }}
+                    />
+                  )}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginLeft: (!isMobile && isActive) ? "6px" : "0", transition: "margin 0.15s" }}>
+                    {cat === "Tất cả kênh" && <List size={16} />}
+                    {cat === "Yêu thích" && <Heart size={16} />}
+                    {cat === "Đang xem" && <Clock size={16} />}
+                    {cat !== "Tất cả kênh" && cat !== "Yêu thích" && cat !== "Đang xem" && <Tv size={16} />}
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {cat}
+                    </span>
                   </span>
                 </button>
               );
@@ -798,28 +816,34 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                           display: "flex",
                           alignItems: "center",
                           gap: "8px",
-                          padding: "6px 16px",
-                          backgroundColor: "var(--color-accent)",
-                          color: "black",
+                          padding: "8px 20px",
+                          backgroundColor: "var(--color-accent-blue)",
+                          color: "white",
                           border: "none",
                           borderRadius: "20px",
-                          fontWeight: 700,
+                          fontWeight: 600,
                           fontSize: "12px",
                           cursor: "pointer",
-                          marginTop: "4px",
-                          boxShadow: "0 4px 12px rgba(34, 197, 94, 0.25)",
-                          transition: "transform 0.15s",
+                          marginTop: "6px",
+                          boxShadow: "0 4px 12px rgba(0, 120, 212, 0.25)",
+                          transition: "all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1)",
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "scale(1.04)";
+                          e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 120, 212, 0.4)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "scale(1)";
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 120, 212, 0.25)";
+                        }}
                       >
-                        <Play size={12} fill="black" />
+                        <Play size={12} fill="white" color="white" />
                         XEM NGAY
                       </button>
                     </div>
                   </>
                 ) : (
-                  <div style={{ color: "var(--color-muted)" }}>Chọn một kênh bên dưới để hiển thị xem trước</div>
+                  <div style={{ color: "var(--color-muted)", fontSize: "14px" }}>Chọn một kênh bên dưới để hiển thị xem trước</div>
                 )}
               </div>
 
@@ -853,25 +877,61 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                   Chương trình tiếp theo
                 </h3>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", position: "relative", paddingLeft: "12px" }}>
+                  {/* Vertical line indicator */}
+                  {futurePrograms.length > 0 && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: "4px",
+                        top: "8px",
+                        bottom: "8px",
+                        width: "2px",
+                        backgroundColor: "var(--color-border)",
+                      }}
+                    />
+                  )}
+
                   {futurePrograms.length > 0 ? (
-                    futurePrograms.map((prog, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "2px",
-                          borderLeft: "2px solid var(--color-border)",
-                          paddingLeft: "12px",
-                        }}
-                      >
-                        <span style={{ fontSize: "11px", color: "var(--color-accent-blue)", fontWeight: 600 }}>
-                          {formatTimeRange(prog.start, prog.stop)}
-                        </span>
-                        <span style={{ fontSize: "13px", fontWeight: 500 }}>{prog.title}</span>
-                      </div>
-                    ))
+                    futurePrograms.map((prog, i) => {
+                      const isFirst = i === 0;
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            position: "relative",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "2px",
+                            paddingBottom: i === futurePrograms.length - 1 ? 0 : "16px",
+                            paddingLeft: "12px",
+                          }}
+                        >
+                          {/* Timeline dot */}
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: isFirst ? "-11px" : "-10px",
+                              top: "6px",
+                              width: isFirst ? "8px" : "6px",
+                              height: isFirst ? "8px" : "6px",
+                              borderRadius: "50%",
+                              backgroundColor: isFirst ? "var(--color-accent-blue)" : "var(--color-muted)",
+                              border: isFirst ? "2px solid var(--color-background)" : "1px solid var(--color-background)",
+                              boxShadow: isFirst ? "0 0 6px var(--color-accent-blue)" : "none",
+                              zIndex: 1,
+                            }}
+                          />
+
+                          <span style={{ fontSize: "11px", color: isFirst ? "var(--color-accent-blue)" : "var(--color-muted)", fontWeight: 600 }}>
+                            {formatTimeRange(prog.start, prog.stop)}
+                          </span>
+                          <span style={{ fontSize: "13px", fontWeight: isFirst ? 600 : 500, color: "var(--color-on-background)" }}>
+                            {prog.title}
+                          </span>
+                        </div>
+                      );
+                    })
                   ) : (
                     <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
                       Không có thông tin lịch sắp phát sóng.
