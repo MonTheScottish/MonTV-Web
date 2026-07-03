@@ -14,6 +14,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [playlistUrl, setPlaylistUrl] = useState(repository.getPlaylistUrl());
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleSave = () => {
     if (!playlistUrl.trim()) {
@@ -51,57 +58,59 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       style={{
         display: "flex",
         flexDirection: "column",
+        alignItems: "center",
         height: "100vh",
         width: "100vw",
         backgroundColor: "var(--color-background)",
         color: "white",
-        padding: "40px",
+        padding: isMobile ? "24px 16px" : "40px",
         overflowY: "auto",
       }}
     >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "16px",
-          marginBottom: "32px",
-        }}
-      >
-        <button
-          onClick={onBack}
+      <div style={{ width: "100%", maxWidth: "1000px", display: "flex", flexDirection: "column" }}>
+        {/* Header */}
+        <div
           style={{
-            background: "none",
-            border: "none",
-            color: "white",
-            cursor: "pointer",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            padding: "8px",
-            borderRadius: "50%",
-            backgroundColor: "rgba(255,255,255,0.05)",
-            transition: "background-color 0.2s",
+            gap: "16px",
+            marginBottom: "32px",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
         >
-          <ArrowLeft size={24} />
-        </button>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <Settings size={28} style={{ color: "var(--color-accent-blue)" }} />
-          <h1 style={{ fontSize: "28px", fontWeight: 700 }}>Thiết lập hệ thống</h1>
+          <button
+            onClick={onBack}
+            style={{
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "8px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(255,255,255,0.05)",
+              transition: "background-color 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
+          >
+            <ArrowLeft size={24} />
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Settings size={28} style={{ color: "var(--color-accent-blue)" }} />
+            <h1 style={{ fontSize: isMobile ? "22px" : "28px", fontWeight: 700 }}>Thiết lập hệ thống</h1>
+          </div>
         </div>
-      </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "40px",
-          maxWidth: "1000px",
-        }}
-      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+            gap: isMobile ? "24px" : "40px",
+            width: "100%",
+          }}
+        >
         {/* Left Panel - Configurations */}
         <div
           className="glass-panel"
@@ -291,6 +300,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
 export default SettingsScreen;

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import type { Channel, EPGProgram } from "../types";
 import { MonTVRepository } from "../services/repository";
-import { ArrowLeft, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw } from "lucide-react";
+import { ArrowLeft, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw, List, X, Search, Tv } from "lucide-react";
 
 interface PlayerScreenProps {
   initialChannel: Channel;
@@ -33,6 +33,17 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<any>(null);
 
+  // Channel drawer states
+  const [showChannelDrawer, setShowChannelDrawer] = useState(false);
+  const [drawerSearch, setDrawerSearch] = useState("");
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // EPG
   const [currentProgram, setCurrentProgram] = useState<EPGProgram | null>(null);
 
@@ -46,11 +57,29 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
     }
+    // Do not hide controls if source selector or channel list drawer is open
+    if (showSourceSelector || showChannelDrawer) return;
+
     controlsTimeoutRef.current = setTimeout(() => {
       setShowControls(false);
       setShowSourceSelector(false);
     }, 2500);
   };
+
+  // Sync controls display when drawer visibility changes
+  useEffect(() => {
+    resetControlsTimeout();
+  }, [showChannelDrawer, showSourceSelector]);
+
+  const filteredChannels = channelList.filter((chan) => {
+    if (!drawerSearch.trim()) return true;
+    const term = drawerSearch.toLowerCase();
+    return (
+      chan.name.toLowerCase().includes(term) ||
+      chan.groupTitle.toLowerCase().includes(term) ||
+      String(chan.number).includes(term)
+    );
+  });
 
   // Sync source index with repository setting when channel changes
   useEffect(() => {
@@ -548,26 +577,49 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       >
         {/* Top Control Bar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button
-            onClick={() => onExit(currentChannel)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "none",
-              border: "none",
-              color: "white",
-              fontSize: "14px",
-              fontWeight: 600,
-              cursor: "pointer",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              backgroundColor: "rgba(255,255,255,0.08)",
-            }}
-          >
-            <ArrowLeft size={18} />
-            Quay lại
-          </button>
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={() => onExit(currentChannel)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "none",
+                border: "none",
+                color: "white",
+                fontSize: "14px",
+                fontWeight: 600,
+                cursor: "pointer",
+                padding: "8px 16px",
+                borderRadius: "20px",
+                backgroundColor: "rgba(255,255,255,0.08)",
+              }}
+            >
+              <ArrowLeft size={18} />
+              Quay lại
+            </button>
+
+            <button
+              onClick={() => setShowChannelDrawer(true)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "none",
+                color: "white",
+                fontSize: "14px",
+                fontWeight: 600,
+                cursor: "pointer",
+                padding: "8px 16px",
+                borderRadius: "20px",
+                backgroundColor: "rgba(138, 180, 248, 0.15)",
+                border: "1px solid rgba(138, 180, 248, 0.3)",
+              }}
+            >
+              <List size={18} style={{ color: "var(--color-accent-blue)" }} />
+              Danh sách kênh
+            </button>
+          </div>
 
           <div
             style={{
@@ -784,6 +836,206 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Drawer Backdrop */}
+      {showChannelDrawer && (
+        <div
+          onClick={() => setShowChannelDrawer(false)}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0,0,0,0.3)",
+            zIndex: 90,
+          }}
+        />
+      )}
+
+      {/* Channel List Drawer */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          height: "100%",
+          width: isMobile ? "280px" : "340px",
+          backgroundColor: "rgba(10, 15, 30, 0.94)",
+          backdropFilter: "blur(12px)",
+          borderLeft: "1px solid var(--color-border)",
+          zIndex: 100,
+          display: "flex",
+          flexDirection: "column",
+          transform: showChannelDrawer ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+          boxShadow: "-10px 0 25px rgba(0,0,0,0.5)",
+        }}
+      >
+        {/* Drawer Header */}
+        <div
+          style={{
+            padding: "20px 16px",
+            borderBottom: "1px solid var(--color-border)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "16px", fontWeight: 700, display: "flex", alignItems: "center", gap: "8px" }}>
+              <List size={16} style={{ color: "var(--color-accent-blue)" }} />
+              Danh sách kênh
+            </span>
+            <button
+              onClick={() => setShowChannelDrawer(false)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--color-muted)",
+                cursor: "pointer",
+                padding: "4px",
+                borderRadius: "50%",
+                backgroundColor: "rgba(255,255,255,0.05)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Drawer Search */}
+          <div style={{ position: "relative" }}>
+            <Search
+              size={14}
+              style={{
+                position: "absolute",
+                left: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--color-muted)",
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Tìm nhanh kênh..."
+              value={drawerSearch}
+              onChange={(e) => setDrawerSearch(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px 12px 8px 30px",
+                borderRadius: "16px",
+                border: "1px solid var(--color-border)",
+                backgroundColor: "rgba(0, 0, 0, 0.3)",
+                color: "white",
+                fontSize: "12px",
+                outline: "none",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Drawer Channel List */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
+          {filteredChannels.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {filteredChannels.map((chan) => {
+                const isCurrent = chan.id === currentChannel.id;
+                return (
+                  <div
+                    key={chan.id}
+                    onClick={() => {
+                      setCurrentChannel(chan);
+                      repository.addRecentChannel(chan.id);
+                      setActiveSourceIndex(0);
+                      // Close drawer on mobile automatically
+                      if (isMobile) {
+                        setShowChannelDrawer(false);
+                      }
+                      resetControlsTimeout();
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "8px 12px",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      backgroundColor: isCurrent ? "rgba(138, 180, 248, 0.15)" : "rgba(255, 255, 255, 0.02)",
+                      border: isCurrent ? "1px solid var(--color-accent-blue)" : "1px solid transparent",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isCurrent) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isCurrent) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.02)";
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        color: isCurrent ? "var(--color-accent-blue)" : "var(--color-muted)",
+                        minWidth: "24px",
+                      }}
+                    >
+                      {String(chan.number).padStart(2, "0")}
+                    </span>
+
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "4px",
+                        backgroundColor: "rgba(255,255,255,0.04)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "3px",
+                      }}
+                    >
+                      {chan.logoUrl ? (
+                        <img
+                          src={chan.logoUrl}
+                          alt={chan.name}
+                          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                        />
+                      ) : (
+                        <Tv size={16} style={{ color: "var(--color-muted)" }} />
+                      )}
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "1px" }}>
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          color: isCurrent ? "var(--color-accent-blue)" : "white",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {chan.name}
+                      </span>
+                      <span style={{ fontSize: "11px", color: "var(--color-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {chan.groupTitle}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", color: "var(--color-muted)", fontSize: "12px", marginTop: "20px" }}>
+              Không tìm thấy kênh.
+            </div>
+          )}
         </div>
       </div>
     </div>
