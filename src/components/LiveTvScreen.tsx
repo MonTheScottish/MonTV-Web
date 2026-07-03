@@ -613,10 +613,10 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                     <div
                       onClick={() => handlePlay(focusedChannel)}
                       style={{
-                        width: isMobile ? "100%" : "384px",
-                        height: isMobile ? "auto" : "216px",
+                        width: isMobile ? "100%" : "512px",
+                        height: isMobile ? "auto" : "288px",
                         aspectRatio: isMobile ? "16/9" : undefined,
-                        minWidth: isMobile ? "0" : "384px",
+                        minWidth: isMobile ? "0" : "512px",
                         borderRadius: "12px",
                         backgroundColor: "black",
                         border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -836,7 +836,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
             </div>
 
             {/* Bottom Channels Grid */}
-            <div style={{ flex: 1, padding: isMobile ? "12px" : "24px", overflowY: "auto" }}>
+            <div style={{ flex: 1, padding: isMobile ? "12px" : "16px", overflowY: "auto" }}>
               {displayedChannels.length > 0 ? (
                 <div className="tv-grid">
                   {displayedChannels.map((chan) => {
@@ -851,12 +851,12 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                         style={{
                           position: "relative",
                           borderRadius: "12px",
-                          padding: isMobile ? "10px" : "16px",
+                          padding: isMobile ? "10px" : "12px",
                           cursor: "pointer",
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "center",
-                          gap: isMobile ? "8px" : "12px",
+                          gap: isMobile ? "6px" : "8px",
                           border: isFocused ? "2px solid var(--color-accent-blue)" : "1px solid var(--color-border)",
                           boxShadow: isFocused ? "0 0 15px rgba(138, 180, 248, 0.25)" : "none",
                           transform: isFocused ? "translateY(-4px)" : "none",
@@ -889,14 +889,14 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
 
                         <div
                           style={{
-                            width: isMobile ? "54px" : "72px",
-                            height: isMobile ? "54px" : "72px",
+                            width: isMobile ? "54px" : "60px",
+                            height: isMobile ? "54px" : "60px",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             borderRadius: "8px",
                             backgroundColor: "rgba(255,255,255,0.03)",
-                            padding: isMobile ? "4px" : "6px",
+                            padding: isMobile ? "4px" : "5px",
                           }}
                         >
                           {chan.logoUrl ? (
@@ -906,7 +906,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                               style={{ width: "100%", height: "100%", objectFit: "contain" }}
                             />
                           ) : (
-                            <Tv size={isMobile ? 22 : 28} style={{ color: "var(--color-muted)" }} />
+                            <Tv size={isMobile ? 22 : 24} style={{ color: "var(--color-muted)" }} />
                           )}
                         </div>
 
