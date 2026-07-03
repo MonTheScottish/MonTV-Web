@@ -428,304 +428,304 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
           </button>
         </div>
       ) : (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {/* Top Panel - Split between Preview and EPG Details */}
+        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+          {/* Sidebar Categories (Left - Full Height) */}
           <div
             style={{
+              flex: "0 0 240px",
+              borderRight: "1px solid var(--color-border)",
+              backgroundColor: "rgba(0, 0, 0, 0.12)",
               display: "flex",
-              height: "260px",
-              borderBottom: "1px solid var(--color-border)",
+              flexDirection: "column",
+              padding: "16px 8px",
+              overflowY: "auto",
+              gap: "4px",
             }}
           >
-            {/* Channel Preview Panel (Left) */}
+            {categories.map((cat) => {
+              const isActive = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => onCategorySelected(cat)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    textAlign: "left",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: isActive ? 700 : 500,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    color: isActive ? "white" : "var(--color-muted)",
+                    backgroundColor: isActive ? "var(--color-secondary)" : "transparent",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
+                  }}
+                >
+                  {cat === "Tất cả kênh" && <List size={16} />}
+                  {cat === "Yêu thích" && <Heart size={16} />}
+                  {cat === "Đang xem" && <Clock size={16} />}
+                  {cat !== "Tất cả kênh" && cat !== "Yêu thích" && cat !== "Đang xem" && <Tv size={16} />}
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {cat}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Main Layout Area (Right - Full Height) */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {/* Top Preview/EPG Row */}
             <div
               style={{
-                flex: "0 0 60%",
-                padding: "24px",
                 display: "flex",
-                gap: "24px",
-                alignItems: "center",
-                backgroundColor: "rgba(0,0,0,0.1)",
+                height: "230px",
+                borderBottom: "1px solid var(--color-border)",
+                backgroundColor: "rgba(0, 0, 0, 0.05)",
               }}
             >
-              {focusedChannel ? (
-                <>
-                  {/* Debounced Preview Video / Fallback logo */}
-                  <div
-                    style={{
-                      width: "280px",
-                      height: "158px",
-                      minWidth: "280px",
-                      borderRadius: "12px",
-                      backgroundColor: "black",
-                      border: "1px solid rgba(255, 255, 255, 0.08)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      overflow: "hidden",
-                      position: "relative",
-                    }}
-                  >
-                    {debouncedChannel && debouncedChannel.id === focusedChannel.id ? (
-                      <MiniPlayer channel={debouncedChannel} repository={repository} />
-                    ) : (
+              {/* Channel Preview Panel (Left) */}
+              <div
+                style={{
+                  flex: "0 0 60%",
+                  padding: "24px",
+                  display: "flex",
+                  gap: "24px",
+                  alignItems: "center",
+                }}
+              >
+                {focusedChannel ? (
+                  <>
+                    {/* Debounced Preview Video / Fallback logo */}
+                    <div
+                      style={{
+                        width: "240px",
+                        height: "135px",
+                        minWidth: "240px",
+                        borderRadius: "12px",
+                        backgroundColor: "black",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden",
+                        position: "relative",
+                      }}
+                    >
+                      {debouncedChannel && debouncedChannel.id === focusedChannel.id ? (
+                        <MiniPlayer channel={debouncedChannel} repository={repository} />
+                      ) : (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "12px",
+                            width: "100%",
+                            height: "100%",
+                            position: "relative",
+                          }}
+                        >
+                          {focusedChannel.logoUrl && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                width: "120px",
+                                height: "120px",
+                                backgroundImage: `url(${focusedChannel.logoUrl})`,
+                                backgroundSize: "contain",
+                                backgroundPosition: "center",
+                                backgroundRepeat: "no-repeat",
+                                filter: "blur(24px) opacity(0.35)",
+                                zIndex: 0,
+                              }}
+                            />
+                          )}
+                          <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                            {focusedChannel.logoUrl ? (
+                              <img
+                                src={focusedChannel.logoUrl}
+                                alt={focusedChannel.name}
+                                style={{ width: "48px", height: "48px", objectFit: "contain" }}
+                              />
+                            ) : (
+                              <Tv size={28} style={{ color: "var(--color-muted)" }} />
+                            )}
+                            <span style={{ fontSize: "11px", color: "var(--color-muted)", animation: "pulse 1.5s infinite" }}>
+                              Đang tải bản xem trước...
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <span
+                          style={{
+                            backgroundColor: "var(--color-secondary)",
+                            color: "white",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                          }}
+                        >
+                          Kênh {String(focusedChannel.number).padStart(2, "0")}
+                        </span>
+                        <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
+                          {focusedChannel.groupTitle}
+                        </span>
+                      </div>
+
+                      <h2
+                        style={{
+                          fontSize: "20px",
+                          fontWeight: 700,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {focusedChannel.name}
+                      </h2>
+
+                      {activeProgram ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px", overflow: "hidden" }}>
+                          <span
+                            style={{
+                              fontSize: "13px",
+                              color: "var(--color-accent)",
+                              fontWeight: 600,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            ĐANG PHÁT: {activeProgram.title}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: "var(--color-muted)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              lineHeight: "1.4",
+                            }}
+                          >
+                            {activeProgram.description || "Không có mô tả chi tiết."}
+                          </span>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
+                          {epgLoaded
+                            ? "Không có thông tin lịch phát sóng tại thời điểm này."
+                            : "Đang tải lịch phát sóng EPG..."}
+                        </span>
+                      )}
+
+                      <button
+                        onClick={() => handlePlay(focusedChannel)}
+                        style={{
+                          alignSelf: "flex-start",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "6px 16px",
+                          backgroundColor: "var(--color-accent)",
+                          color: "black",
+                          border: "none",
+                          borderRadius: "20px",
+                          fontWeight: 700,
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          marginTop: "4px",
+                          boxShadow: "0 4px 12px rgba(34, 197, 94, 0.25)",
+                          transition: "transform 0.15s",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                      >
+                        <Play size={12} fill="black" />
+                        XEM NGAY
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ color: "var(--color-muted)" }}>Chọn một kênh bên dưới để hiển thị xem trước</div>
+                )}
+              </div>
+
+              {/* EPG Schedules Panel (Right) */}
+              <div
+                style={{
+                  flex: "0 0 40%",
+                  padding: "24px",
+                  borderLeft: "1px solid var(--color-border)",
+                  display: "flex",
+                  flexDirection: "column",
+                  overflowY: "auto",
+                  backgroundColor: "rgba(0,0,0,0.15)",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "var(--color-accent-blue)",
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <Clock size={16} />
+                  Chương trình tiếp theo
+                </h3>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {futurePrograms.length > 0 ? (
+                    futurePrograms.map((prog, i) => (
                       <div
+                        key={i}
                         style={{
                           display: "flex",
                           flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: "12px",
-                          width: "100%",
-                          height: "100%",
-                          position: "relative",
+                          gap: "2px",
+                          borderLeft: "2px solid var(--color-border)",
+                          paddingLeft: "12px",
                         }}
                       >
-                        {focusedChannel.logoUrl && (
-                          <div
-                            style={{
-                              position: "absolute",
-                              width: "120px",
-                              height: "120px",
-                              backgroundImage: `url(${focusedChannel.logoUrl})`,
-                              backgroundSize: "contain",
-                              backgroundPosition: "center",
-                              backgroundRepeat: "no-repeat",
-                              filter: "blur(24px) opacity(0.35)",
-                              zIndex: 0,
-                            }}
-                          />
-                        )}
-                        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-                          {focusedChannel.logoUrl ? (
-                            <img
-                              src={focusedChannel.logoUrl}
-                              alt={focusedChannel.name}
-                              style={{ width: "56px", height: "56px", objectFit: "contain" }}
-                            />
-                          ) : (
-                            <Tv size={36} style={{ color: "var(--color-muted)" }} />
-                          )}
-                          <span style={{ fontSize: "11px", color: "var(--color-muted)", animation: "pulse 1.5s infinite" }}>
-                            Đang tải bản xem trước...
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span
-                        style={{
-                          backgroundColor: "var(--color-secondary)",
-                          color: "white",
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          padding: "2px 8px",
-                          borderRadius: "4px",
-                        }}
-                      >
-                        Kênh {String(focusedChannel.number).padStart(2, "0")}
-                      </span>
-                      <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
-                        {focusedChannel.groupTitle}
-                      </span>
-                    </div>
-
-                    <h2
-                      style={{
-                        fontSize: "22px",
-                        fontWeight: 700,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {focusedChannel.name}
-                    </h2>
-
-                    {activeProgram ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "2px", overflow: "hidden" }}>
-                        <span
-                          style={{
-                            fontSize: "13px",
-                            color: "var(--color-accent)",
-                            fontWeight: 600,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          ĐANG PHÁT: {activeProgram.title}
+                        <span style={{ fontSize: "11px", color: "var(--color-accent-blue)", fontWeight: 600 }}>
+                          {formatTimeRange(prog.start, prog.stop)}
                         </span>
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            color: "var(--color-muted)",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            lineHeight: "1.4",
-                          }}
-                        >
-                          {activeProgram.description || "Không có mô tả chi tiết."}
-                        </span>
+                        <span style={{ fontSize: "13px", fontWeight: 500 }}>{prog.title}</span>
                       </div>
-                    ) : (
-                      <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
-                        {epgLoaded
-                          ? "Không có thông tin lịch phát sóng tại thời điểm này."
-                          : "Đang tải lịch phát sóng EPG..."}
-                      </span>
-                    )}
-
-                    <button
-                      onClick={() => handlePlay(focusedChannel)}
-                      style={{
-                        alignSelf: "flex-start",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "8px 20px",
-                        backgroundColor: "var(--color-accent)",
-                        color: "black",
-                        border: "none",
-                        borderRadius: "20px",
-                        fontWeight: 700,
-                        fontSize: "13px",
-                        cursor: "pointer",
-                        marginTop: "4px",
-                        boxShadow: "0 4px 12px rgba(34, 197, 94, 0.25)",
-                        transition: "transform 0.15s",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-                    >
-                      <Play size={14} fill="black" />
-                      XEM NGAY
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div style={{ color: "var(--color-muted)" }}>Chọn một kênh bên dưới để hiển thị xem trước</div>
-              )}
-            </div>
-
-            {/* EPG Schedules Panel (Right) */}
-            <div
-              style={{
-                flex: "0 0 40%",
-                padding: "24px",
-                borderLeft: "1px solid var(--color-border)",
-                display: "flex",
-                flexDirection: "column",
-                overflowY: "auto",
-                backgroundColor: "rgba(0,0,0,0.15)",
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "var(--color-accent-blue)",
-                  marginBottom: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <Clock size={16} />
-                Chương trình tiếp theo
-              </h3>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {futurePrograms.length > 0 ? (
-                  futurePrograms.map((prog, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "2px",
-                        borderLeft: "2px solid var(--color-border)",
-                        paddingLeft: "12px",
-                      }}
-                    >
-                      <span style={{ fontSize: "11px", color: "var(--color-accent-blue)", fontWeight: 600 }}>
-                        {formatTimeRange(prog.start, prog.stop)}
-                      </span>
-                      <span style={{ fontSize: "13px", fontWeight: 500 }}>{prog.title}</span>
-                    </div>
-                  ))
-                ) : (
-                  <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
-                    Không có thông tin lịch sắp phát sóng.
-                  </span>
-                )}
+                    ))
+                  ) : (
+                    <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
+                      Không có thông tin lịch sắp phát sóng.
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Bottom Panel - Sidebar Categories & Channels Grid */}
-          <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-            {/* Sidebar Categories */}
-            <div
-              style={{
-                flex: "0 0 200px",
-                borderRight: "1px solid var(--color-border)",
-                backgroundColor: "rgba(0,0,0,0.1)",
-                display: "flex",
-                flexDirection: "column",
-                padding: "16px 8px",
-                overflowY: "auto",
-                gap: "4px",
-              }}
-            >
-              {categories.map((cat) => {
-                const isActive = selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => onCategorySelected(cat)}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      textAlign: "left",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      fontWeight: isActive ? 700 : 500,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      color: isActive ? "white" : "var(--color-muted)",
-                      backgroundColor: isActive ? "var(--color-secondary)" : "transparent",
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
-                    }}
-                  >
-                    {cat === "Tất cả kênh" && <List size={16} />}
-                    {cat === "Yêu thích" && <Heart size={16} />}
-                    {cat === "Đang xem" && <Clock size={16} />}
-                    {cat !== "Tất cả kênh" && cat !== "Yêu thích" && cat !== "Đang xem" && <Tv size={16} />}
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {cat}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Channels Grid */}
+            {/* Bottom Channels Grid */}
             <div style={{ flex: 1, padding: "24px", overflowY: "auto" }}>
               {displayedChannels.length > 0 ? (
                 <div className="tv-grid">
