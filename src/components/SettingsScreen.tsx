@@ -62,7 +62,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         height: "100vh",
         width: "100vw",
         backgroundColor: "var(--color-background)",
-        color: "white",
+        color: "var(--color-on-background)",
         padding: isMobile ? "24px 16px" : "40px",
         overflowY: "auto",
       }}
@@ -81,19 +81,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             onClick={onBack}
             style={{
               background: "none",
-              border: "none",
-              color: "white",
+              border: "1px solid var(--color-border)",
+              color: "var(--color-on-background)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               padding: "8px",
               borderRadius: "50%",
-              backgroundColor: "rgba(255,255,255,0.05)",
+              backgroundColor: "var(--color-search-bg)",
               transition: "background-color 0.2s",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--color-surface-hover)")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--color-search-bg)")}
           >
             <ArrowLeft size={24} />
           </button>
@@ -135,10 +135,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               style={{
                 width: "100%",
                 padding: "12px 16px",
-                backgroundColor: "rgba(0,0,0,0.3)",
+                backgroundColor: "var(--color-search-bg)",
                 border: "1px solid var(--color-border)",
                 borderRadius: "8px",
-                color: "white",
+                color: "var(--color-on-background)",
                 fontSize: "14px",
                 outline: "none",
                 transition: "border-color 0.2s",
@@ -179,8 +179,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               disabled={isRefreshing}
               style={{
                 padding: "12px 20px",
-                backgroundColor: "rgba(255,255,255,0.05)",
-                color: "white",
+                backgroundColor: "var(--color-search-bg)",
+                color: "var(--color-on-background)",
                 border: "1px solid var(--color-border)",
                 borderRadius: "8px",
                 fontWeight: 600,
@@ -262,17 +262,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </h2>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.03)", paddingBottom: "10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--color-border)", paddingBottom: "10px" }}>
               <span style={{ color: "var(--color-muted)" }}>Tên ứng dụng</span>
               <span style={{ fontWeight: 600 }}>MonTV Web Player</span>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.03)", paddingBottom: "10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--color-border)", paddingBottom: "10px" }}>
               <span style={{ color: "var(--color-muted)" }}>Phiên bản</span>
               <span style={{ fontWeight: 600 }}>1.0.0 (React WebApp)</span>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.03)", paddingBottom: "10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--color-border)", paddingBottom: "10px" }}>
               <span style={{ color: "var(--color-muted)" }}>Môi trường</span>
               <span style={{ fontWeight: 600 }}>HTML5 / hls.js Browser</span>
             </div>
@@ -287,7 +287,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             style={{
               marginTop: "auto",
               padding: "16px",
-              backgroundColor: "rgba(255,255,255,0.02)",
+              backgroundColor: "var(--color-search-bg)",
               borderRadius: "8px",
               border: "1px dashed var(--color-border)",
               fontSize: "13px",
@@ -295,7 +295,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               color: "var(--color-muted)",
             }}
           >
-            <strong>Mẹo:</strong> Phím lên/xuống (Up/Down) trong chế độ phát video sẽ giúp chuyển kênh nhanh chóng. Nhấn và giữ một kênh ở màn hình chính để thêm vào mục Yêu thích.
+            <strong>Mẹo:</strong> Phím Lên/Xuống dùng để điều chỉnh âm lượng. Phím Trái/Phải để chuyển đổi kênh nhanh chóng trong màn hình xem video.
           </div>
         </div>
       </div>

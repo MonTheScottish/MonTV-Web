@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Fluent 2 Design Tokens (Dark Theme) */
+  /* Fluent 2 Design Tokens - DARK THEME (Default) */
   --color-background: #111111;         /* colorBackground1 */
   --color-surface: #202020;            /* colorBackground2 */
   --color-surface-hover: #2d2d2d;      /* colorBackground2Hover */
@@ -17,6 +17,46 @@
   --font-sans: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --transition-fast: 0.1s cubic-bezier(0.1, 0.9, 0.2, 1);
   --transition-normal: 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+
+  /* Transparent overlay helpers mapped for Dark Theme */
+  --color-sidebar-bg: rgba(0, 0, 0, 0.12);
+  --color-logo-bg: rgba(255, 255, 255, 0.03);
+  --color-epg-container-bg: rgba(0, 0, 0, 0.15);
+  --color-search-bg: rgba(0, 0, 0, 0.2);
+  --color-glass-panel: rgba(32, 32, 32, 0.75);
+  --color-glass-card: rgba(32, 32, 32, 0.4);
+  --color-glass-card-hover: rgba(45, 45, 45, 0.8);
+  --color-glass-border: rgba(255, 255, 255, 0.05);
+  --color-glass-border-hover: rgba(255, 255, 255, 0.15);
+  --shadow-depth: rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme='light'] {
+  /* Fluent 2 Design Tokens - LIGHT THEME */
+  --color-background: #f3f3f3;         /* colorBackground1 */
+  --color-surface: #ffffff;            /* colorBackground2 */
+  --color-surface-hover: #f5f5f5;      /* colorBackground2Hover */
+  --color-primary: #fafafa;            /* colorBackground3 */
+  --color-secondary: #0078d4;          /* colorCompoundBrandForeground1 (Fluent Blue) */
+  --color-on-primary: #ffffff;
+  --color-on-background: #242424;      /* colorNeutralForeground1 */
+  --color-muted: #616161;              /* colorNeutralForeground3 (Tertiary Text) */
+  --color-border: rgba(0, 0, 0, 0.08); /* colorStroke1 */
+  --color-accent: #107c41;             /* colorPaletteGreenBackground1 */
+  --color-accent-blue: #0078d4;        /* colorBrandBackground */
+  --color-destructive: #d83b01;        /* colorPaletteRedBackground1 */
+
+  /* Transparent overlay helpers mapped for Light Theme */
+  --color-sidebar-bg: rgba(0, 0, 0, 0.03);
+  --color-logo-bg: rgba(0, 0, 0, 0.02);
+  --color-epg-container-bg: rgba(0, 0, 0, 0.03);
+  --color-search-bg: rgba(255, 255, 255, 0.8);
+  --color-glass-panel: rgba(255, 255, 255, 0.8);
+  --color-glass-card: rgba(255, 255, 255, 0.55);
+  --color-glass-card-hover: rgba(255, 255, 255, 0.9);
+  --color-glass-border: rgba(0, 0, 0, 0.06);
+  --color-glass-border-hover: rgba(0, 0, 0, 0.12);
+  --shadow-depth: rgba(0, 0, 0, 0.08);
 }
 
 * {
@@ -45,34 +85,34 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(128, 128, 128, 0.2);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(128, 128, 128, 0.4);
 }
 
 /* Fluent 2 Acrylic material */
 .glass-panel {
-  background: rgba(32, 32, 32, 0.75);
+  background: var(--color-glass-panel);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--color-glass-border);
+  box-shadow: 0 8px 32px var(--shadow-depth);
 }
 
 /* Fluent 2 standard card item */
 .glass-card {
-  background: rgba(32, 32, 32, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--color-glass-card);
+  border: 1px solid var(--color-glass-border);
   transition: all var(--transition-normal);
   border-radius: 8px !important;
 }
 
 .glass-card:hover, .glass-card:focus-within {
-  background: rgba(45, 45, 45, 0.8);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  background: var(--color-glass-card-hover);
+  border-color: var(--color-glass-border-hover);
+  box-shadow: 0 4px 16px var(--shadow-depth);
   transform: translateY(-2px);
 }
 

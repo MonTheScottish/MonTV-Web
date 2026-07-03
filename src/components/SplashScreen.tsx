@@ -86,7 +86,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         height: "100vh",
         width: "100vw",
         backgroundColor: "var(--color-background)",
-        color: "white",
+        color: "var(--color-on-background)",
         gap: "24px",
       }}
     >
@@ -112,7 +112,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           }}
         >
           <AlertTriangle size={36} color="var(--color-destructive)" />
-          <p style={{ fontSize: "15px", color: "#f8fafc" }}>{error}</p>
+          <p style={{ fontSize: "15px", color: "var(--color-on-background)" }}>{error}</p>
           <button
             onClick={() => window.location.reload()}
             style={{
@@ -142,7 +142,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             style={{
               width: "100%",
               height: "4px",
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              backgroundColor: "var(--color-border)",
               borderRadius: "2px",
               overflow: "hidden",
             }}

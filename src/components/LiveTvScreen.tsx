@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import Hls from "hls.js";
 import type { Channel } from "../types";
 import { MonTVRepository } from "../services/repository";
-import { Tv, Heart, Clock, Settings, Search, Play, Star, List, AlertCircle, RefreshCw } from "lucide-react";
+import { Tv, Heart, Clock, Settings, Search, Play, Star, List, AlertCircle, RefreshCw, Sun, Moon } from "lucide-react";
 
 interface MiniPlayerProps {
   channel: Channel;
@@ -230,6 +230,22 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [epgLoaded, setEpgLoaded] = useState(false);
+
+  // Theme state
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    const saved = localStorage.getItem("montv-theme");
+    return (saved === "light" || saved === "dark") ? saved : "dark";
+  });
+
+  // Sync theme to <html> data-theme attribute
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("montv-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   // Search and Focus states
   const [searchQuery, setSearchQuery] = useState("");
@@ -465,8 +481,8 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                 padding: "8px 16px 8px 36px",
                 borderRadius: "20px",
                 border: "1px solid var(--color-border)",
-                backgroundColor: "rgba(0, 0, 0, 0.2)",
-                color: "white",
+                backgroundColor: "var(--color-search-bg)",
+                color: "var(--color-on-background)",
                 fontSize: "13px",
                 outline: "none",
                 width: isMobile ? "130px" : "220px",
@@ -477,13 +493,35 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
             />
           </div>
 
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
+            style={{
+              background: "none",
+              border: "1px solid var(--color-border)",
+              color: "var(--color-on-background)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "34px",
+              height: "34px",
+              borderRadius: "50%",
+              backgroundColor: "var(--color-search-bg)",
+              transition: "all var(--transition-fast)",
+            }}
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
           <button
             onClick={onOpenSettings}
             title="Thiết lập"
             style={{
               background: "none",
-              border: "none",
-              color: "white",
+              border: "1px solid var(--color-border)",
+              color: "var(--color-on-background)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -492,7 +530,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
               fontWeight: 500,
               padding: isMobile ? "8px" : "8px 16px",
               borderRadius: "18px",
-              backgroundColor: "rgba(255,255,255,0.05)",
+              backgroundColor: "var(--color-search-bg)",
             }}
           >
             <Settings size={16} />
@@ -532,7 +570,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
               flex: isMobile ? "0 0 auto" : "0 0 240px",
               borderRight: isMobile ? "none" : "1px solid var(--color-border)",
               borderBottom: isMobile ? "1px solid var(--color-border)" : "none",
-              backgroundColor: "rgba(0, 0, 0, 0.12)",
+              backgroundColor: "var(--color-sidebar-bg)",
               display: "flex",
               flexDirection: isMobile ? "row" : "column",
               padding: isMobile ? "8px 12px" : "16px 8px",
@@ -789,7 +827,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                   flexDirection: "column",
                   maxHeight: isMobile ? "185px" : "280px",
                   overflowY: "auto",
-                  backgroundColor: "rgba(0,0,0,0.15)",
+                  backgroundColor: "var(--color-epg-container-bg)",
                 }}
               >
                 <h3
@@ -895,7 +933,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                             alignItems: "center",
                             justifyContent: "center",
                             borderRadius: "8px",
-                            backgroundColor: "rgba(255,255,255,0.03)",
+                            backgroundColor: "var(--color-logo-bg)",
                             padding: isMobile ? "4px" : "5px",
                           }}
                         >

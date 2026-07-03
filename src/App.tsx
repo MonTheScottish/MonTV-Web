@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MonTVRepository } from "./services/repository";
 import type { Channel } from "./types";
 import SplashScreen from "./components/SplashScreen";
@@ -8,6 +8,12 @@ import SettingsScreen from "./components/SettingsScreen";
 
 function App() {
   const repository = useMemo(() => new MonTVRepository(), []);
+
+  // Apply theme immediately on startup
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("montv-theme") || "dark";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+  }, []);
 
   const [screen, setScreen] = useState<"splash" | "livetv" | "player" | "settings">("splash");
   const [playlistUrl, setPlaylistUrl] = useState(() => repository.getPlaylistUrl());
