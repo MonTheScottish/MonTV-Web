@@ -33,7 +33,7 @@
   </style>
 </head>
 <body>
-  <video id="video" autoplay controls playsinline></video>
+  <video id="video" autoplay playsinline></video>
   <div id="error" style="display: none;"></div>
 
   <script>
@@ -48,6 +48,51 @@
 
       const video = document.getElementById('video');
       const player = new shaka.Player(video);
+
+      // Parse query params
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasControls = urlParams.get('controls') === 'true';
+      if (hasControls) {
+        video.setAttribute('controls', 'true');
+      } else {
+        video.removeAttribute('controls');
+        // Click to toggle play/pause
+        video.addEventListener('click', () => {
+          if (video.paused) {
+            video.play().catch(console.error);
+          } else {
+            video.pause();
+          }
+        });
+      }
+
+      // Sync state back to parent window
+      video.addEventListener('play', () => {
+        window.parent.postMessage({ type: 'videoState', isPlaying: true }, '*');
+      });
+      video.addEventListener('pause', () => {
+        window.parent.postMessage({ type: 'videoState', isPlaying: false }, '*');
+      });
+      video.addEventListener('playing', () => {
+        window.parent.postMessage({ type: 'videoState', isPlaying: true }, '*');
+      });
+
+      // Handle play/pause commands from parent window
+      window.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'control') {
+          if (e.data.action === 'play') {
+            video.play().catch(console.error);
+          } else if (e.data.action === 'pause') {
+            video.pause();
+          } else if (e.data.action === 'togglePlay') {
+            if (video.paused) {
+              video.play().catch(console.error);
+            } else {
+              video.pause();
+            }
+          }
+        }
+      });
 
       // Listen for error events
       player.addEventListener('error', (event) => {

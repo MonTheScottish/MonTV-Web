@@ -37,6 +37,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   const [currentProgram, setCurrentProgram] = useState<EPGProgram | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
 
   // Reset controls timer
@@ -338,8 +339,26 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     };
   }, [currentChannel, channelList]);
 
+  // Listen for videoState events from shaka.html iframe
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === "videoState") {
+        setIsPlaying(!!e.data.isPlaying);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
   const togglePlay = () => {
-    if (isWebView) return; // Skip for webview iframe
+    if (isWebView) {
+      const iframe = iframeRef.current;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: "control", action: "togglePlay" }, "*");
+      }
+      resetControlsTimeout();
+      return;
+    }
     const video = videoRef.current;
     if (!video) return;
 
@@ -396,6 +415,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     >
       {isWebView ? (
         <iframe
+          ref={iframeRef}
           src={streamUrl}
           style={{
             width: "100%",
