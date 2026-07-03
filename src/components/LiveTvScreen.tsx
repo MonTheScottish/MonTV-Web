@@ -1,7 +1,122 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import Hls from "hls.js";
 import type { Channel } from "../types";
 import { MonTVRepository } from "../services/repository";
 import { Tv, Heart, Clock, Settings, Search, Play, Star, List, AlertCircle, RefreshCw } from "lucide-react";
+
+interface MiniPlayerProps {
+  channel: Channel;
+  repository: MonTVRepository;
+}
+
+const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const [streamUrl, setStreamUrl] = useState("");
+  const [resolvedHeaders, setResolvedHeaders] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let active = true;
+    const resolve = async () => {
+      try {
+        const savedSrcIdx = repository.getLastWorkingSourceIndex(channel.id);
+        const sourceIndex = savedSrcIdx < channel.urls.length ? savedSrcIdx : 0;
+        const resolved = await repository.resolveChannelStreamUrl(channel, sourceIndex);
+        if (!active) return;
+        if (resolved && resolved.url) {
+          setStreamUrl(resolved.url);
+          setResolvedHeaders(resolved.headers || {});
+        } else {
+          setStreamUrl(channel.streamUrl);
+          setResolvedHeaders({});
+        }
+      } catch (e) {
+        console.error("Error resolving stream:", e);
+        if (active) {
+          setStreamUrl(channel.streamUrl);
+          setResolvedHeaders({});
+        }
+      }
+    };
+    resolve();
+    return () => {
+      active = false;
+    };
+  }, [channel, repository]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !streamUrl) return;
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    const playVideo = () => {
+      video.play().catch((e) => {
+        console.warn("MiniPlayer auto-play blocked:", e);
+      });
+    };
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = streamUrl;
+      video.addEventListener("loadedmetadata", playVideo);
+    } else if (Hls.isSupported()) {
+      const hls = new Hls({
+        maxMaxBufferLength: 5,
+        enableWorker: true,
+        lowLatencyMode: true,
+        xhrSetup: (xhr, _url) => {
+          if (resolvedHeaders) {
+            Object.entries(resolvedHeaders).forEach(([k, v]) => {
+              try {
+                if (k.toLowerCase() !== "user-agent" && k.toLowerCase() !== "referer") {
+                  xhr.setRequestHeader(k, v);
+                }
+              } catch (e) {
+                console.warn("Could not set request header", k, e);
+              }
+            });
+          }
+        },
+      });
+      hlsRef.current = hls;
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        playVideo();
+      });
+    }
+
+    return () => {
+      if (video) {
+        video.removeEventListener("loadedmetadata", playVideo);
+        video.src = "";
+      }
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [streamUrl, resolvedHeaders]);
+
+  return (
+    <video
+      ref={videoRef}
+      muted
+      playsInline
+      autoPlay
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        borderRadius: "12px",
+        backgroundColor: "black",
+      }}
+    />
+  );
+};
 
 interface LiveTvScreenProps {
   repository: MonTVRepository;
@@ -35,6 +150,18 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
   // Search and Focus states
   const [searchQuery, setSearchQuery] = useState("");
   const [focusedChannel, setFocusedChannel] = useState<Channel | null>(null);
+  const [debouncedChannel, setDebouncedChannel] = useState<Channel | null>(null);
+
+  useEffect(() => {
+    setDebouncedChannel(null);
+    if (!focusedChannel) return;
+
+    const timer = setTimeout(() => {
+      setDebouncedChannel(focusedChannel);
+    }, 1500); // 1.5 seconds debounce
+
+    return () => clearTimeout(timer);
+  }, [focusedChannel]);
 
   // Time state for TopBar
   const [nowMillis, setNowMillis] = useState(Date.now());
@@ -323,31 +450,50 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
             >
               {focusedChannel ? (
                 <>
+                  {/* Debounced Preview Video / Fallback logo */}
                   <div
                     style={{
-                      width: "140px",
-                      height: "140px",
-                      borderRadius: "16px",
-                      backgroundColor: "rgba(255,255,255,0.03)",
-                      border: "1px solid var(--color-border)",
+                      width: "280px",
+                      height: "158px",
+                      minWidth: "280px",
+                      borderRadius: "12px",
+                      backgroundColor: "black",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      padding: "12px",
+                      overflow: "hidden",
+                      position: "relative",
                     }}
                   >
-                    {focusedChannel.logoUrl ? (
-                      <img
-                        src={focusedChannel.logoUrl}
-                        alt={focusedChannel.name}
-                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                      />
+                    {debouncedChannel && debouncedChannel.id === focusedChannel.id ? (
+                      <MiniPlayer channel={debouncedChannel} repository={repository} />
                     ) : (
-                      <Tv size={48} style={{ color: "var(--color-muted)" }} />
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        {focusedChannel.logoUrl ? (
+                          <img
+                            src={focusedChannel.logoUrl}
+                            alt={focusedChannel.name}
+                            style={{ width: "56px", height: "56px", objectFit: "contain" }}
+                          />
+                        ) : (
+                          <Tv size={36} style={{ color: "var(--color-muted)" }} />
+                        )}
+                        <span style={{ fontSize: "11px", color: "var(--color-muted)", animation: "pulse 1.5s infinite" }}>
+                          Đang tải bản xem trước...
+                        </span>
+                      </div>
                     )}
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <span
                         style={{
@@ -366,19 +512,49 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                       </span>
                     </div>
 
-                    <h2 style={{ fontSize: "24px", fontWeight: 700 }}>{focusedChannel.name}</h2>
+                    <h2
+                      style={{
+                        fontSize: "22px",
+                        fontWeight: 700,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {focusedChannel.name}
+                    </h2>
 
                     {activeProgram ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <span style={{ fontSize: "14px", color: "var(--color-accent)", fontWeight: 600 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px", overflow: "hidden" }}>
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            color: "var(--color-accent)",
+                            fontWeight: 600,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           ĐANG PHÁT: {activeProgram.title}
                         </span>
-                        <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: "var(--color-muted)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            lineHeight: "1.4",
+                          }}
+                        >
                           {activeProgram.description || "Không có mô tả chi tiết."}
                         </span>
                       </div>
                     ) : (
-                      <span style={{ fontSize: "14px", color: "var(--color-muted)" }}>
+                      <span style={{ fontSize: "13px", color: "var(--color-muted)" }}>
                         {epgLoaded
                           ? "Không có thông tin lịch phát sóng tại thời điểm này."
                           : "Đang tải lịch phát sóng EPG..."}
@@ -392,22 +568,22 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
-                        padding: "10px 24px",
+                        padding: "8px 20px",
                         backgroundColor: "var(--color-accent)",
                         color: "black",
                         border: "none",
                         borderRadius: "20px",
                         fontWeight: 700,
-                        fontSize: "14px",
+                        fontSize: "13px",
                         cursor: "pointer",
-                        marginTop: "8px",
-                        boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
+                        marginTop: "4px",
+                        boxShadow: "0 4px 12px rgba(34, 197, 94, 0.25)",
                         transition: "transform 0.15s",
                       }}
                       onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
                       onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                     >
-                      <Play size={16} fill="black" />
+                      <Play size={14} fill="black" />
                       XEM NGAY
                     </button>
                   </div>

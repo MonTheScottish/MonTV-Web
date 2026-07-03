@@ -50,19 +50,22 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     }, 4000);
   };
 
-  // Fetch resolved stream URL
+  // Sync source index with repository setting when channel changes
+  useEffect(() => {
+    const savedSrcIdx = repository.getLastWorkingSourceIndex(currentChannel.id);
+    const sourceIndex = savedSrcIdx < currentChannel.urls.length ? savedSrcIdx : 0;
+    setActiveSourceIndex(sourceIndex);
+  }, [currentChannel]);
+
+  // Fetch resolved stream URL when channel or source index changes
   useEffect(() => {
     let active = true;
     setLoading(true);
     setErrorMsg(null);
 
-    const savedSrcIdx = repository.getLastWorkingSourceIndex(currentChannel.id);
-    const sourceIndex = savedSrcIdx < currentChannel.urls.length ? savedSrcIdx : 0;
-    setActiveSourceIndex(sourceIndex);
-
     const resolveStream = async () => {
       try {
-        const resolved = await repository.resolveChannelStreamUrl(currentChannel, sourceIndex);
+        const resolved = await repository.resolveChannelStreamUrl(currentChannel, activeSourceIndex);
         if (!active) return;
 
         if (resolved && resolved.url) {
@@ -103,7 +106,28 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       active = false;
       clearInterval(interval);
     };
-  }, [currentChannel, repository]);
+  }, [currentChannel, activeSourceIndex, repository]);
+
+  // Define automatic fallback switching handler with Ref to bypass closures
+  const handleStreamFailureRef = useRef<() => void>(() => {});
+  handleStreamFailureRef.current = () => {
+    const urlsCount = currentChannel.urls.length > 0 ? currentChannel.urls.length : 1;
+    if (activeSourceIndex + 1 < urlsCount) {
+      const nextIndex = activeSourceIndex + 1;
+      console.log(`Stream failed. Automatically switching to source index ${nextIndex}`);
+      setErrorMsg(`Kênh lỗi. Đang tự động đổi sang nguồn dự phòng (${nextIndex + 1}/${urlsCount})...`);
+      
+      // Save last working source index
+      repository.setLastWorkingSourceIndex(currentChannel.id, nextIndex);
+      
+      // Update state to trigger reload
+      setTimeout(() => {
+        setActiveSourceIndex(nextIndex);
+      }, 2500); // 2.5 seconds timeout to notify the user
+    } else {
+      setErrorMsg("Tất cả các nguồn phát của kênh đều gặp sự cố. Vui lòng thử lại sau.");
+    }
+  };
 
   // Handle streamUrl playback with hls.js
   useEffect(() => {
@@ -172,8 +196,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               hls.recoverMediaError();
               break;
             default:
-              setErrorMsg("Luồng phát gặp sự cố. Vui lòng đổi nguồn phát.");
-              setLoading(false);
+              handleStreamFailureRef.current?.();
               break;
           }
         }
@@ -192,8 +215,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     const handleVideoError = () => {
       if (video.error) {
         console.error("HTML5 video error:", video.error);
-        setErrorMsg("Không thể phát kênh này. Thử luồng dự phòng.");
-        setLoading(false);
+        handleStreamFailureRef.current?.();
       }
     };
 
