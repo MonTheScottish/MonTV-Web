@@ -11,6 +11,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-playlist/, ''),
         headers: {
+          'User-Agent': 'OkHttp/4.9.2',
           Referer: 'https://freem3u.xyz',
         }
       },
@@ -19,6 +20,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-epg/, ''),
         headers: {
+          'User-Agent': 'OkHttp/4.9.2',
           Referer: 'https://vnepg.site',
         }
       }
