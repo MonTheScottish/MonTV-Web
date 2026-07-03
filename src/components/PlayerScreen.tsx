@@ -226,7 +226,12 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
         setActiveSourceIndex(nextIndex);
       }, 2500); // 2.5 seconds timeout to notify the user
     } else {
-      setErrorMsg("Tất cả các nguồn phát của kênh đều gặp sự cố. Vui lòng thử lại sau.");
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS && isWebView) {
+        setErrorMsg("Thiết bị iOS không hỗ trợ định dạng giải mã DRM Widevine của nguồn phát này. Vui lòng bấm 'Đổi nguồn dự phòng' bên dưới để chọn nguồn m3u8 tiêu chuẩn.");
+      } else {
+        setErrorMsg("Tất cả các nguồn phát của kênh đều gặp sự cố. Vui lòng kiểm tra lại kết nối mạng hoặc bấm 'Đổi nguồn dự phòng' để chọn nguồn phát khác.");
+      }
     }
   };
 
@@ -247,6 +252,13 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     const startLoadingTimeout = () => {
       if (loadTimeoutId) clearTimeout(loadTimeoutId);
       loadTimeoutId = setTimeout(() => {
+        const currentVideo = videoRef.current;
+        if (currentVideo && currentVideo.readyState >= 1 && currentVideo.paused) {
+          console.log("Video metadata loaded but paused (likely autoplay blocked on mobile). Not skipping.");
+          setLoading(false);
+          setShowControls(true);
+          return;
+        }
         console.warn("Playback loading timed out after 10s. Trying next source...");
         handleStreamFailureRef.current?.();
       }, 10000);
@@ -265,6 +277,8 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
         setIsPlaying(true);
       } catch (e) {
         console.warn("Autoplay block or playback interrupted:", e);
+        setIsPlaying(false);
+        setShowControls(true);
       }
     };
 
