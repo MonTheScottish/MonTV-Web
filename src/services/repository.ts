@@ -1,9 +1,9 @@
 import type { Channel, ChannelUrl, EPGProgram, ResolvedStream, VnepgChannel } from "../types";
 import { parseM3U, parseJSON } from "./playlistParser";
-import { parseEPGXml } from "./epgParser";
+
 
 export const DEFAULT_PLAYLIST_URL = "https://freem3u.xyz/api/channels/x_1.0.1/app.json";
-export const VNEPG_EPG_URL = "https://iptv-epg.org/files/epg-vn.xml.gz";
+export const VNEPG_EPG_URL = "https://vnepg.site/api";
 export const BACKUP_M3U_URLS = [
   "https://iptv-org.github.io/iptv/countries/vn.m3u",
   "https://iptv-org.github.io/iptv/languages/vie.m3u",
@@ -106,9 +106,6 @@ export class MonTVRepository {
   private getProxyUrl(url: string): string {
     if (url.startsWith("https://freem3u.xyz")) {
       return url.replace("https://freem3u.xyz", "/api-playlist");
-    }
-    if (url.startsWith("https://iptv-epg.org")) {
-      return url.replace("https://iptv-epg.org", "/api-epg");
     }
     if (url.startsWith("https://vnepg.site")) {
       return url.replace("https://vnepg.site", "/api-epg");
@@ -377,45 +374,69 @@ export class MonTVRepository {
     if (onProgress) onProgress(0.05);
 
     try {
-      const proxyUrl = this.getProxyUrl(VNEPG_EPG_URL);
-      const res = await fetch(proxyUrl);
-      if (!res.ok) throw new Error(`Fetch XML.gz failed: ${res.status}`);
+      const channelsRes = await fetch(this.getProxyUrl(`${VNEPG_EPG_URL}/channels`));
+      if (!channelsRes.ok) throw new Error(`Fetch channels failed: ${channelsRes.status}`);
+      const channelsJson = await channelsRes.json();
+      const apiChannels: VnepgChannel[] = channelsJson.channels || [];
+
+      for (const ch of apiChannels) {
+        this.vnepgChannels[ch.id] = ch;
+      }
 
       if (onProgress) onProgress(0.2);
 
-      // Decompress gzip body stream if needed
-      const isGzip = VNEPG_EPG_URL.endsWith(".gz") || res.headers.get("content-encoding") === "gzip";
-      let xmlText = "";
-      if (isGzip && res.body) {
-        try {
-          const ds = new DecompressionStream("gzip");
-          const decompressedStream = res.body.pipeThrough(ds);
-          xmlText = await new Response(decompressedStream).text();
-        } catch (e) {
-          console.warn("DecompressionStream failed or unsupported, reading as raw text", e);
-          xmlText = await res.text();
-        }
-      } else {
-        xmlText = await res.text();
+      this.buildTvgIdToVnepgIdMap();
+
+      if (onProgress) onProgress(0.3);
+
+      const allVnepgIds = new Set<string>();
+      for (const tvgId of Object.values(this.tvgIdToVnepgId)) {
+        allVnepgIds.add(tvgId);
+      }
+      for (const vnepgId of Object.values(this.channelNameToVnepgId)) {
+        allVnepgIds.add(vnepgId);
       }
 
-      if (onProgress) onProgress(0.5);
+      const matchedIds = Array.from(allVnepgIds);
+      if (matchedIds.length === 0) {
+        if (onProgress) onProgress(1.0);
+        this.lastEpgLoadTime = Date.now();
+        return;
+      }
 
-      const parsed = parseEPGXml(xmlText);
-      this.epgData = parsed.epgData;
-      this.vnepgChannels = parsed.vnepgChannels;
+      let loaded = 0;
+      const total = matchedIds.length;
 
-      if (onProgress) onProgress(0.7);
+      const fetchSchedule = async (id: string): Promise<void> => {
+        try {
+          const schedRes = await fetch(this.getProxyUrl(`${VNEPG_EPG_URL}/schedule/${id}`));
+          if (!schedRes.ok) return;
+          const schedJson = await schedRes.json();
+          const items = schedJson.items || [];
+          this.epgData[id] = items.map((item: { startMs: number; stopMs: number; title: string; desc?: string }) => ({
+            title: item.title || "",
+            start: new Date(item.startMs).toISOString(),
+            stop: new Date(item.stopMs).toISOString(),
+            description: item.desc || "",
+          }));
+        } catch (e) {
+          console.warn(`EPG fetch failed for channel ${id}`, e);
+        }
+        loaded++;
+        if (onProgress) onProgress(0.3 + (loaded / total) * 0.6);
+      };
 
-      this.buildTvgIdToVnepgIdMap();
-      if (onProgress) onProgress(0.85);
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < matchedIds.length; i += BATCH_SIZE) {
+        const batch = matchedIds.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(fetchSchedule));
+      }
 
       this.overrideChannelMetadataFromVnepg();
       if (onProgress) onProgress(1.0);
-
       this.lastEpgLoadTime = Date.now();
     } catch (e) {
-      console.error("Error loading XML EPG", e);
+      console.error("Error loading EPG from vnepg.site", e);
       if (onProgress) onProgress(1.0);
     }
   }
