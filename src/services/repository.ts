@@ -490,9 +490,10 @@ export class MonTVRepository {
       const meta = this.vnepgChannels[vnepgId];
       if (!meta) continue;
 
+      const cleanedMetaName = meta.name.replace(/^VN\s*-\s*/i, "").trim();
       const newName =
-        !channel.name || channel.name.length < meta.name.length
-          ? meta.name || channel.name
+        !channel.name || cleanedMetaName.length > channel.name.length
+          ? cleanedMetaName || channel.name
           : channel.name;
 
       const newLogo = !channel.logoUrl && meta.logo ? meta.logo : channel.logoUrl;
