@@ -20,13 +20,18 @@ export default async function handler(request) {
   queryParams.delete("path");
   
   const queryString = queryParams.toString();
-  const targetUrl = `https://vnepg.site/${path}${queryString ? "?" + queryString : ""}`;
+  let targetOrigin = "https://iptv-epg.org";
+  if (path.startsWith("files/")) {
+    targetOrigin = "https://iptv-epg.org";
+  } else {
+    targetOrigin = "https://vnepg.site";
+  }
+  const targetUrl = `${targetOrigin}/${path}${queryString ? "?" + queryString : ""}`;
 
   try {
     const response = await fetch(targetUrl, {
       headers: {
-        "User-Agent": "OkHttp/4.9.2",
-        "Referer": "https://vnepg.site",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Encoding": "gzip, deflate",
       },
     });
