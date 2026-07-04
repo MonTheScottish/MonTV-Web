@@ -14,3 +14,7 @@ node_modules
 # Exclude local build assets if any
 dist
 dist-ssr
+
+# Exclude pnpm workspace config (not needed on Vercel)
+pnpm-workspace.yaml
+.npmrc

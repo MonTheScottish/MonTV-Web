@@ -16,19 +16,19 @@ MonTV Web Player là trình phát truyền hình trực tuyến (IPTV) tối ưu
 
 1. **Cài đặt các gói phụ thuộc**:
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. **Chạy máy chủ phát triển cục bộ với HTTPS**:
    Dự án sử dụng plugin tự tạo chứng chỉ SSL (`@vitejs/plugin-basic-ssl`) giúp kích hoạt giao thức HTTPS cục bộ nhằm hỗ trợ đầy đủ các tính năng EME/DRM trên trình duyệt:
    ```bash
-   npm run dev
+   pnpm dev
    ```
    Sau khi chạy, truy cập địa chỉ: `https://localhost:5173`
 
 3. **Xây dựng phiên bản Production**:
    ```bash
-   npm run build
+   pnpm build
    ```
 
 ## 🌐 Cấu Hình Triển Khai Trên Vercel

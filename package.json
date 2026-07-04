@@ -1,28 +1,32 @@
 {
-  "name": "montv-web",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "hls.js": "^1.6.16",
-    "lucide-react": "^1.23.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
-  },
-  "devDependencies": {
-    "@types/node": "^24.13.2",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-basic-ssl": "^2.3.0",
-    "@vitejs/plugin-react": "^6.0.3",
-    "oxlint": "^1.71.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.1.1"
-  }
+    "name":  "montv-web",
+    "private":  true,
+    "version":  "0.0.0",
+    "type":  "module",
+    "scripts":  {
+                    "dev":  "vite",
+                    "build":  "tsc -b \u0026\u0026 vite build",
+                    "lint":  "oxlint",
+                    "preview":  "vite preview"
+                },
+    "dependencies":  {
+                         "hls.js":  "^1.6.16",
+                         "lucide-react":  "^1.23.0",
+                         "react":  "^19.2.7",
+                         "react-dom":  "^19.2.7"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^24.13.2",
+                            "@types/react":  "^19.2.17",
+                            "@types/react-dom":  "^19.2.3",
+                            "@vitejs/plugin-basic-ssl":  "^2.3.0",
+                            "@vitejs/plugin-react":  "^6.0.3",
+                            "oxlint":  "^1.71.0",
+                            "typescript":  "~6.0.2",
+                            "vite":  "^8.1.1"
+                        },
+    "packageManager":  "pnpm@11.9.0",
+    "engines":  {
+                    "node":  "\u003e=18"
+                }
 }
