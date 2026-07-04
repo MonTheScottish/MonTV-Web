@@ -424,7 +424,10 @@ export class MonTVRepository {
     const vnepgKeys = new Set(Object.keys(this.vnepgChannels));
     const vnepgNames: Record<string, string> = {};
     for (const key in this.vnepgChannels) {
-      vnepgNames[this.vnepgChannels[key].name.toLowerCase()] = key;
+      const rawName = this.vnepgChannels[key].name;
+      const cleanName = rawName.replace(/^VN\s*-\s*/i, "").toLowerCase();
+      vnepgNames[cleanName] = key;
+      vnepgNames[rawName.toLowerCase()] = key;
     }
 
     const resolved: Record<string, string> = {};
@@ -439,6 +442,12 @@ export class MonTVRepository {
         candidates.push(tvgId.toLowerCase());
         candidates.push(tvgId.replace(/\.VN$/i, "").toLowerCase());
         candidates.push(tvgId.replace(/\.vn$/i, "").toLowerCase());
+
+        const stripped = tvgId.replace(/\.VN$/i, "").replace(/\.vn$/i, "").replace(/hd$|sd$|fhd$/i, "").toLowerCase();
+        if (stripped !== tvgId.replace(/\.VN$/i, "").replace(/\.vn$/i, "").toLowerCase()) {
+          candidates.push(stripped);
+          candidates.push(stripped + ".vn");
+        }
 
         const aliases = TVG_ID_ALIASES[tvgId];
         if (aliases) {
