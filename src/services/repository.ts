@@ -107,9 +107,7 @@ export class MonTVRepository {
     if (url.startsWith("https://freem3u.xyz")) {
       return url.replace("https://freem3u.xyz", "/api-playlist");
     }
-    if (url.startsWith("https://vnepg.site")) {
-      return url.replace("https://vnepg.site", "/api-epg");
-    }
+    // vnepg.site API accessible directly from browser (no Cloudflare block)
     return url;
   }
 
