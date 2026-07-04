@@ -5,10 +5,6 @@
     {
       "source": "/api-playlist/:path*",
       "destination": "/api/playlist?path=:path*"
-    },
-    {
-      "source": "/api-epg/:path*",
-      "destination": "/api/epg?path=:path*"
     }
   ]
 }
