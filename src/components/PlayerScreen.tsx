@@ -824,16 +824,25 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                background: "none",
-                border: "none",
                 color: "white",
-                fontSize: isMobile ? "12px" : "14px",
+                fontSize: isMobile ? "13px" : "15px",
                 fontWeight: 600,
                 cursor: "pointer",
-                padding: isMobile ? "6px 12px" : "8px 16px",
-                borderRadius: "20px",
-                backgroundColor: "rgba(255,255,255,0.08)",
+                padding: isMobile ? "8px 14px" : "10px 18px",
+                borderRadius: "24px",
+                backgroundColor: "var(--color-control-glass)",
+                border: "1px solid var(--color-control-border)",
+                backdropFilter: "blur(12px)",
                 whiteSpace: "nowrap",
+                transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
+                e.currentTarget.style.borderColor = "var(--color-control-border-active)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
+                e.currentTarget.style.borderColor = "var(--color-control-border)";
               }}
             >
               <ArrowLeft size={isMobile ? 16 : 18} />
@@ -846,20 +855,29 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                background: "none",
                 color: "white",
-                fontSize: isMobile ? "12px" : "14px",
+                fontSize: isMobile ? "13px" : "15px",
                 fontWeight: 600,
                 cursor: "pointer",
-                padding: isMobile ? "6px 12px" : "8px 16px",
-                borderRadius: "20px",
-                backgroundColor: "rgba(138, 180, 248, 0.15)",
-                border: "1px solid rgba(138, 180, 248, 0.3)",
+                padding: isMobile ? "8px 14px" : "10px 18px",
+                borderRadius: "24px",
+                backgroundColor: "var(--color-control-glass)",
+                border: "1px solid var(--color-control-border)",
+                backdropFilter: "blur(12px)",
                 whiteSpace: "nowrap",
+                transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
+                e.currentTarget.style.borderColor = "var(--color-control-border-active)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
+                e.currentTarget.style.borderColor = "var(--color-control-border)";
               }}
             >
-              <List size={isMobile ? 16 : 18} style={{ color: "var(--color-accent-blue)" }} />
-              Danh sách kênh
+              <List size={isMobile ? 16 : 18} style={{ color: "var(--color-accent-blue-fg)" }} />
+              <span>Danh sách kênh</span>
             </button>
           </div>
         </div>
@@ -867,65 +885,82 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
         {/* Bottom Control Bar */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {/* Channel Info & Description */}
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "20px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "18px" }}>
             {currentChannel.logoUrl ? (
               <img
                 src={currentChannel.logoUrl}
                 alt={currentChannel.name}
                 style={{
-                  width: "56px",
-                  height: "56px",
+                  width: "64px",
+                  height: "64px",
                   objectFit: "contain",
-                  borderRadius: "8px",
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                  border: "1px solid var(--color-border)",
-                  padding: "4px",
+                  borderRadius: "10px",
+                  backgroundColor: "rgba(255,255,255,0.06)",
+                  border: "1px solid var(--color-control-border)",
+                  padding: "6px",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
                 }}
               />
             ) : (
               <div
                 style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "8px",
+                  width: "64px",
+                  height: "64px",
+                  borderRadius: "10px",
                   backgroundColor: "var(--color-primary)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "18px",
+                  fontSize: "22px",
                   fontWeight: 800,
-                  border: "1px solid var(--color-border)",
+                  border: "1px solid var(--color-control-border)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
                 }}
               >
                 {currentChannel.name.substring(0, 2).toUpperCase()}
               </div>
             )}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "5px", minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <span
                   style={{
-                    backgroundColor: "var(--color-accent-blue)",
+                    backgroundColor: "var(--color-primary-action)",
                     color: "white",
                     fontWeight: 800,
-                    fontSize: "11px",
-                    padding: "2px 6px",
-                    borderRadius: "4px",
+                    fontSize: "12px",
+                    padding: "3px 8px",
+                    borderRadius: "6px",
+                    letterSpacing: "0.5px",
                   }}
                 >
                   CH {String(currentChannel.number).padStart(2, "0")}
                 </span>
-                <h2 style={{ fontSize: "20px", fontWeight: 700 }}>{currentChannel.name}</h2>
+                <h2 style={{ fontSize: isMobile ? "20px" : "24px", fontWeight: 700, letterSpacing: "-0.3px" }}>
+                  {currentChannel.name}
+                </h2>
               </div>
 
               {currentProgram ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span style={{ fontSize: "14px", color: "var(--color-accent)", fontWeight: 500 }}>
-                    ĐANG PHÁT: {currentProgram.title}
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: "white", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: "var(--color-primary-action)",
+                        boxShadow: "0 0 8px var(--color-primary-action)",
+                      }}
+                    />
+                    ĐANG PHÁT: <span style={{ color: "var(--color-accent-blue-fg)" }}>{currentProgram.title}</span>
                   </span>
-                  <span style={{ fontSize: "12px", color: "var(--color-muted)" }}>
-                    {currentProgram.description || "Không có thông tin chương trình chi tiết."}
-                  </span>
+                  {currentProgram.description && (
+                    <span style={{ fontSize: "12px", color: "var(--color-muted)", paddingLeft: "16px" }}>
+                      {currentProgram.description}
+                    </span>
+                  )}
                 </div>
               ) : (
                 <span style={{ fontSize: "14px", color: "var(--color-muted)" }}>
@@ -956,19 +991,31 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: "6px",
-                      background: "none",
+                      gap: "8px",
                       color: "white",
                       fontSize: "13px",
+                      fontWeight: 600,
                       cursor: "pointer",
-                      padding: "8px 16px",
-                      borderRadius: "6px",
-                      backgroundColor: "rgba(255,255,255,0.08)",
-                      border: "1px solid var(--color-border)",
+                      padding: "10px 18px",
+                      borderRadius: "24px",
+                      backgroundColor: "var(--color-control-glass)",
+                      border: `1px solid ${showSourceSelector ? "var(--color-control-border-active)" : "var(--color-control-border)"}`,
+                      backdropFilter: "blur(12px)",
+                      transition: "background-color 0.2s, border-color 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
+                      e.currentTarget.style.borderColor = "var(--color-control-border-active)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!showSourceSelector) {
+                        e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
+                        e.currentTarget.style.borderColor = "var(--color-control-border)";
+                      }
                     }}
                   >
                     <span>{getSourceDisplayName(currentChannel.urls[activeSourceIndex], activeSourceIndex)}</span>
-                    <ChevronDown size={14} />
+                    <ChevronDown size={14} style={{ color: "var(--color-accent-blue-fg)", transform: showSourceSelector ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
                   </button>
 
                   {showSourceSelector && (
@@ -1044,28 +1091,36 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
-                    background: "none",
-                    border: "1px solid var(--color-border)",
+                    gap: "10px",
                     color: "white",
                     cursor: "pointer",
-                    padding: "8px 16px",
-                    borderRadius: "20px",
-                    backgroundColor: "rgba(255, 255, 255, 0.05)",
-                    transition: "all 0.2s",
+                    padding: "8px 16px 8px 12px",
+                    borderRadius: "24px",
+                    backgroundColor: "var(--color-control-glass)",
+                    border: "1px solid var(--color-control-border)",
+                    backdropFilter: "blur(12px)",
+                    transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)"}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
+                    e.currentTarget.style.borderColor = "var(--color-control-border-active)";
+                    e.currentTarget.style.transform = "translateX(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
+                    e.currentTarget.style.borderColor = "var(--color-control-border)";
+                    e.currentTarget.style.transform = "translateX(0)";
+                  }}
                 >
-                  <ArrowLeft size={16} />
+                  <ArrowLeft size={18} style={{ color: "var(--color-accent-blue-fg)" }} />
                   {prevChannel.logoUrl ? (
                     <img
                       src={prevChannel.logoUrl}
                       alt={prevChannel.name}
-                      style={{ width: "24px", height: "24px", objectFit: "contain", borderRadius: "4px" }}
+                      style={{ width: "28px", height: "28px", objectFit: "contain", borderRadius: "6px", backgroundColor: "rgba(255,255,255,0.06)", padding: "2px" }}
                     />
                   ) : (
-                    <Tv size={16} />
+                    <Tv size={18} />
                   )}
                 </button>
               )}
@@ -1075,30 +1130,34 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                 onClick={togglePlay}
                 aria-label={isPlaying ? "Tạm dừng" : "Phát"}
                 style={{
-                  background: "none",
-                  border: "none",
-                  color: "black",
+                  color: "white",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: "56px",
-                  height: "56px",
+                  width: "64px",
+                  height: "64px",
                   borderRadius: "50%",
-                  backgroundColor: "var(--color-accent-blue)",
-                  boxShadow: "0 0 15px rgba(138, 180, 248, 0.4)",
-                  transition: "transform 0.2s, background-color 0.2s",
+                  backgroundColor: "var(--color-primary-action)",
+                  boxShadow: "var(--color-primary-action-glow), inset 0 1px 0 rgba(255,255,255,0.18)",
+                  transition: "transform 0.2s, background-color 0.2s, box-shadow 0.2s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.1)";
-                  e.currentTarget.style.backgroundColor = "#a8c7fa";
+                  e.currentTarget.style.transform = "scale(1.08)";
+                  e.currentTarget.style.backgroundColor = "hsl(212, 100%, 72%)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.backgroundColor = "var(--color-accent-blue)";
+                  e.currentTarget.style.backgroundColor = "var(--color-primary-action)";
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.transform = "scale(0.94)";
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.transform = "scale(1.08)";
                 }}
               >
-                {isPlaying ? <Pause size={24} fill="black" /> : <Play size={24} fill="black" style={{ marginLeft: "4px" }} />}
+                {isPlaying ? <Pause size={28} fill="white" /> : <Play size={28} fill="white" style={{ marginLeft: "4px" }} />}
               </button>
 
               {/* Next Channel Button */}
@@ -1110,29 +1169,37 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
-                    background: "none",
-                    border: "1px solid var(--color-border)",
+                    gap: "10px",
                     color: "white",
                     cursor: "pointer",
-                    padding: "8px 16px",
-                    borderRadius: "20px",
-                    backgroundColor: "rgba(255, 255, 255, 0.05)",
-                    transition: "all 0.2s",
+                    padding: "8px 12px 8px 16px",
+                    borderRadius: "24px",
+                    backgroundColor: "var(--color-control-glass)",
+                    border: "1px solid var(--color-control-border)",
+                    backdropFilter: "blur(12px)",
+                    transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)"}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
+                    e.currentTarget.style.borderColor = "var(--color-control-border-active)";
+                    e.currentTarget.style.transform = "translateX(2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
+                    e.currentTarget.style.borderColor = "var(--color-control-border)";
+                    e.currentTarget.style.transform = "translateX(0)";
+                  }}
                 >
                   {nextChannel.logoUrl ? (
                     <img
                       src={nextChannel.logoUrl}
                       alt={nextChannel.name}
-                      style={{ width: "24px", height: "24px", objectFit: "contain", borderRadius: "4px" }}
+                      style={{ width: "28px", height: "28px", objectFit: "contain", borderRadius: "6px", backgroundColor: "rgba(255,255,255,0.06)", padding: "2px" }}
                     />
                   ) : (
-                    <Tv size={16} />
+                    <Tv size={18} />
                   )}
-                  <ArrowRight size={16} />
+                  <ArrowRight size={18} style={{ color: "var(--color-accent-blue-fg)" }} />
                 </button>
               )}
             </div>
@@ -1158,21 +1225,33 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "none",
-                  border: "1px solid var(--color-border)",
                   color: "white",
                   cursor: "pointer",
-                  padding: "8px 12px",
-                  borderRadius: "20px",
-                  backgroundColor: showVolumeControl ? "rgba(138, 180, 248, 0.2)" : "rgba(255, 255, 255, 0.05)",
-                  transition: "background-color 0.2s",
+                  padding: "10px",
+                  borderRadius: "50%",
+                  width: "44px",
+                  height: "44px",
+                  backgroundColor: "var(--color-control-glass)",
+                  border: `1px solid ${showVolumeControl || volume === 0 ? "var(--color-control-border-active)" : "var(--color-control-border)"}`,
+                  backdropFilter: "blur(12px)",
+                  transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
+                  e.currentTarget.style.borderColor = "var(--color-control-border-active)";
+                  e.currentTarget.style.transform = "scale(1.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
+                  e.currentTarget.style.borderColor = volume === 0 ? "var(--color-control-border-active)" : "var(--color-control-border)";
+                  e.currentTarget.style.transform = "scale(1)";
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
               >
                 {volume === 0 ? (
-                  <VolumeX size={16} style={{ color: "var(--color-destructive)" }} />
+                  <VolumeX size={18} style={{ color: "var(--color-destructive)" }} />
                 ) : (
-                  <Volume2 size={16} style={{ color: "var(--color-accent-blue)" }} />
+                  <Volume2 size={18} style={{ color: "var(--color-accent-blue-fg)" }} />
                 )}
               </button>
 

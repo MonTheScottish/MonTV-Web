@@ -30,6 +30,13 @@
   --color-glass-border: rgba(255, 255, 255, 0.05);
   --color-glass-border-hover: rgba(255, 255, 255, 0.15);
   --shadow-depth: rgba(0, 0, 0, 0.35);
+
+  --color-control-glass: rgba(8, 10, 22, 0.55);
+  --color-control-glass-hover: rgba(20, 28, 50, 0.8);
+  --color-control-border: rgba(255, 255, 255, 0.12);
+  --color-control-border-active: rgba(138, 180, 248, 0.65);
+  --color-primary-action: hsl(212, 95%, 62%);
+  --color-primary-action-glow: 0 0 24px rgba(138, 180, 248, 0.45);
 }
 
 :root[data-theme='light'] {
