@@ -1138,6 +1138,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                   width: "64px",
                   height: "64px",
                   borderRadius: "50%",
+                  border: "none",
                   backgroundColor: "var(--color-primary-action)",
                   boxShadow: "var(--color-primary-action-glow), inset 0 1px 0 rgba(255,255,255,0.18)",
                   transition: "transform 0.2s, background-color 0.2s, box-shadow 0.2s",
