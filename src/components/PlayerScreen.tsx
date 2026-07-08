@@ -862,129 +862,6 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               Danh sách kênh
             </button>
           </div>
-
-          {/* Volume Control Panel */}
-          <div
-            onMouseEnter={handleVolumeMouseEnter}
-            onMouseLeave={handleVolumeMouseLeave}
-            style={{
-              position: "relative",
-              display: isMobile ? "none" : "flex",
-              alignItems: "center",
-              gap: "0",
-            }}
-          >
-            <button
-              onClick={toggleMute}
-              aria-label={volume === 0 ? "Bật tiếng" : "Tắt tiếng"}
-              title={volume === 0 ? "Bật tiếng" : "Tắt tiếng"}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "none",
-                border: "1px solid var(--color-border)",
-                color: "white",
-                cursor: "pointer",
-                padding: "6px 10px",
-                borderRadius: "4px",
-                backgroundColor: showVolumeControl ? "rgba(138, 180, 248, 0.2)" : "rgba(0,0,0,0.4)",
-                transition: "background-color 0.2s",
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              {volume === 0 ? (
-                <VolumeX size={16} style={{ color: "var(--color-destructive)" }} />
-              ) : (
-                <Volume2 size={16} style={{ color: "var(--color-accent-blue)" }} />
-              )}
-              <span style={{ fontSize: "11px", marginLeft: "6px", fontWeight: 600, color: "var(--color-muted)" }}>
-                {Math.round(volume * 100)}%
-              </span>
-            </button>
-
-            {showVolumeControl && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 8px)",
-                  right: 0,
-                  backgroundColor: "rgba(10, 15, 30, 0.94)",
-                  backdropFilter: "blur(12px)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "8px",
-                  padding: "16px 14px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "10px",
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-                  zIndex: 35,
-                }}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                <span style={{ fontSize: "10px", color: "var(--color-muted)", fontWeight: 600 }}>ÂM LƯỢNG</span>
-                {/* Vertical slider */}
-                <div
-                  ref={volumeSliderRef}
-                  role="slider"
-                  tabIndex={0}
-                  aria-label="Âm lượng"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(volume * 100)}
-                  style={{
-                    position: "relative",
-                    width: "6px",
-                    height: "120px",
-                    backgroundColor: "rgba(255,255,255,0.15)",
-                    borderRadius: "3px",
-                    cursor: "pointer",
-                    touchAction: "none",
-                  }}
-                  onPointerDown={handleVolumeSliderPointerDown}
-                  onPointerMove={handleVolumeSliderPointerMove}
-                  onPointerUp={handleVolumeSliderPointerUp}
-                  onKeyDown={handleVolumeSliderKeyDown}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      left: 0,
-                      width: "100%",
-                      height: `${volume * 100}%`,
-                      backgroundColor: volume === 0 ? "var(--color-destructive)" : "var(--color-accent-blue)",
-                      borderRadius: "3px",
-                      pointerEvents: "none",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: `calc(${volume * 100}% - 6px)`,
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      width: "14px",
-                      height: "14px",
-                      borderRadius: "50%",
-                      backgroundColor: "white",
-                      border: "2px solid var(--color-accent-blue)",
-                      pointerEvents: "none",
-                      transition: volume === 0 ? "border-color 0.2s" : "none",
-                      ...(volume === 0 && { borderColor: "var(--color-destructive)" }),
-                    }}
-                  />
-                </div>
-                <Volume2
-                  size={14}
-                  style={{
-                    color: volume === 0 ? "var(--color-destructive)" : "var(--color-accent-blue)",
-                  }}
-                />
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Bottom Control Bar */}
@@ -1260,8 +1137,127 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               )}
             </div>
 
-            {/* Right spacer to balance the layout */}
-            {!isMobile && <div style={{ minWidth: "150px" }} />}
+            {/* Right: Volume Control */}
+            <div
+              onMouseEnter={handleVolumeMouseEnter}
+              onMouseLeave={handleVolumeMouseLeave}
+              style={{
+                position: "relative",
+                display: isMobile ? "none" : "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+                gap: "0",
+                minWidth: "150px",
+              }}
+            >
+              <button
+                onClick={toggleMute}
+                aria-label={volume === 0 ? "Bật tiếng" : "Tắt tiếng"}
+                title={volume === 0 ? "Bật tiếng" : "Tắt tiếng"}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "none",
+                  border: "1px solid var(--color-border)",
+                  color: "white",
+                  cursor: "pointer",
+                  padding: "8px 12px",
+                  borderRadius: "20px",
+                  backgroundColor: showVolumeControl ? "rgba(138, 180, 248, 0.2)" : "rgba(255, 255, 255, 0.05)",
+                  transition: "background-color 0.2s",
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                {volume === 0 ? (
+                  <VolumeX size={16} style={{ color: "var(--color-destructive)" }} />
+                ) : (
+                  <Volume2 size={16} style={{ color: "var(--color-accent-blue)" }} />
+                )}
+              </button>
+
+              {showVolumeControl && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "calc(100% + 12px)",
+                    right: 0,
+                    backgroundColor: "rgba(10, 15, 30, 0.94)",
+                    backdropFilter: "blur(12px)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "8px",
+                    padding: "16px 14px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "10px",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                    zIndex: 35,
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <span style={{ fontSize: "10px", color: "var(--color-muted)", fontWeight: 600 }}>ÂM LƯỢNG</span>
+                  {/* Vertical slider */}
+                  <div
+                    ref={volumeSliderRef}
+                    role="slider"
+                    tabIndex={0}
+                    aria-label="Âm lượng"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(volume * 100)}
+                    style={{
+                      position: "relative",
+                      width: "6px",
+                      height: "120px",
+                      backgroundColor: "rgba(255,255,255,0.15)",
+                      borderRadius: "3px",
+                      cursor: "pointer",
+                      touchAction: "none",
+                    }}
+                    onPointerDown={handleVolumeSliderPointerDown}
+                    onPointerMove={handleVolumeSliderPointerMove}
+                    onPointerUp={handleVolumeSliderPointerUp}
+                    onKeyDown={handleVolumeSliderKeyDown}
+                  >
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        width: "100%",
+                        height: `${volume * 100}%`,
+                        backgroundColor: volume === 0 ? "var(--color-destructive)" : "var(--color-accent-blue)",
+                        borderRadius: "3px",
+                        pointerEvents: "none",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: `calc(${volume * 100}% - 6px)`,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        width: "14px",
+                        height: "14px",
+                        borderRadius: "50%",
+                        backgroundColor: "white",
+                        border: "2px solid var(--color-accent-blue)",
+                        pointerEvents: "none",
+                        transition: volume === 0 ? "border-color 0.2s" : "none",
+                        ...(volume === 0 && { borderColor: "var(--color-destructive)" }),
+                      }}
+                    />
+                  </div>
+                  <Volume2
+                    size={14}
+                    style={{
+                      color: volume === 0 ? "var(--color-destructive)" : "var(--color-accent-blue)",
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
