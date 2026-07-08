@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import type { Channel, EPGProgram } from "../types";
 import { MonTVRepository } from "../services/repository";
-import { ArrowLeft, ArrowRight, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw, List, X, Search, Tv, Volume2, Sun } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Pause, AlertCircle, ChevronDown, Check, RefreshCw, List, X, Search, Tv, Volume2, VolumeX, Sun } from "lucide-react";
 
 const areHeadersEqual = (h1: Record<string, string>, h2: Record<string, string>) => {
   const k1 = Object.keys(h1);
@@ -53,10 +53,13 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // Volume states
-  const [volume, setVolume] = useState(1.0);
+  const [volume, setVolume] = useState(repository.getVolume());
   const [showVolumeIndicator, setShowVolumeIndicator] = useState(false);
+  const [showVolumeControl, setShowVolumeControl] = useState(false);
   const volumeTimeoutRef = useRef<any>(null);
   const isVolumeMounted = useRef(false);
+  const lastNonZeroVolumeRef = useRef(repository.getVolume() > 0 ? repository.getVolume() : 1.0);
+  const volumeControlTimeoutRef = useRef<any>(null);
 
   // Brightness and Touch Gesture states
   const [brightness, setBrightness] = useState(1.0);
@@ -141,6 +144,11 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
 
   // Sync volume changes to standard video elements and shaka iframe
   useEffect(() => {
+    if (volume > 0) {
+      lastNonZeroVolumeRef.current = volume;
+    }
+    repository.setVolume(volume);
+
     if (isWebView) {
       const iframe = iframeRef.current;
       if (iframe && iframe.contentWindow) {
@@ -162,6 +170,75 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       isVolumeMounted.current = true;
     }
   }, [volume, isWebView]);
+
+  const toggleMute = () => {
+    if (volume > 0) {
+      setVolume(0);
+    } else {
+      setVolume(lastNonZeroVolumeRef.current);
+    }
+    resetControlsTimeout();
+  };
+
+  const updateVolumeFromSlider = (newVal: number) => {
+    const clamped = Math.max(0, Math.min(1, newVal));
+    setVolume(clamped);
+  };
+
+  const handleVolumeMouseEnter = () => {
+    if (volumeControlTimeoutRef.current) {
+      clearTimeout(volumeControlTimeoutRef.current);
+    }
+    setShowVolumeControl(true);
+  };
+
+  const handleVolumeMouseLeave = () => {
+    if (volumeControlTimeoutRef.current) {
+      clearTimeout(volumeControlTimeoutRef.current);
+    }
+    volumeControlTimeoutRef.current = setTimeout(() => {
+      setShowVolumeControl(false);
+    }, 600);
+  };
+
+  const volumeSliderRef = useRef<HTMLDivElement | null>(null);
+  const isDraggingVolumeRef = useRef(false);
+
+  const handleVolumeSliderPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingVolumeRef.current = true;
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = 1 - ((e.clientY - rect.top) / rect.height);
+    updateVolumeFromSlider(ratio);
+  };
+
+  const handleVolumeSliderPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingVolumeRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = 1 - ((e.clientY - rect.top) / rect.height);
+    updateVolumeFromSlider(ratio);
+  };
+
+  const handleVolumeSliderPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingVolumeRef.current = false;
+    (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
+  };
+
+  const handleVolumeSliderKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowUp" || e.key === "ArrowRight") {
+      e.preventDefault();
+      setVolume((v) => Math.min(1, v + 0.05));
+    } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      setVolume((v) => Math.max(0, v - 0.05));
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setVolume(1);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setVolume(0);
+    }
+  };
 
   // EPG
   const [currentProgram, setCurrentProgram] = useState<EPGProgram | null>(null);
@@ -799,6 +876,129 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
             }}
           >
             Đang phát ở định dạng HLS
+          </div>
+
+          {/* Volume Control Panel */}
+          <div
+            onMouseEnter={handleVolumeMouseEnter}
+            onMouseLeave={handleVolumeMouseLeave}
+            style={{
+              position: "relative",
+              display: isMobile ? "none" : "flex",
+              alignItems: "center",
+              gap: "0",
+            }}
+          >
+            <button
+              onClick={toggleMute}
+              aria-label={volume === 0 ? "Bật tiếng" : "Tắt tiếng"}
+              title={volume === 0 ? "Bật tiếng" : "Tắt tiếng"}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "none",
+                border: "1px solid var(--color-border)",
+                color: "white",
+                cursor: "pointer",
+                padding: "6px 10px",
+                borderRadius: "4px",
+                backgroundColor: showVolumeControl ? "rgba(138, 180, 248, 0.2)" : "rgba(0,0,0,0.4)",
+                transition: "background-color 0.2s",
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              {volume === 0 ? (
+                <VolumeX size={16} style={{ color: "var(--color-destructive)" }} />
+              ) : (
+                <Volume2 size={16} style={{ color: "var(--color-accent-blue)" }} />
+              )}
+              <span style={{ fontSize: "11px", marginLeft: "6px", fontWeight: 600, color: "var(--color-muted)" }}>
+                {Math.round(volume * 100)}%
+              </span>
+            </button>
+
+            {showVolumeControl && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: 0,
+                  backgroundColor: "rgba(10, 15, 30, 0.94)",
+                  backdropFilter: "blur(12px)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "8px",
+                  padding: "16px 14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "10px",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                  zIndex: 35,
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <span style={{ fontSize: "10px", color: "var(--color-muted)", fontWeight: 600 }}>ÂM LƯỢNG</span>
+                {/* Vertical slider */}
+                <div
+                  ref={volumeSliderRef}
+                  role="slider"
+                  tabIndex={0}
+                  aria-label="Âm lượng"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(volume * 100)}
+                  style={{
+                    position: "relative",
+                    width: "6px",
+                    height: "120px",
+                    backgroundColor: "rgba(255,255,255,0.15)",
+                    borderRadius: "3px",
+                    cursor: "pointer",
+                    touchAction: "none",
+                  }}
+                  onPointerDown={handleVolumeSliderPointerDown}
+                  onPointerMove={handleVolumeSliderPointerMove}
+                  onPointerUp={handleVolumeSliderPointerUp}
+                  onKeyDown={handleVolumeSliderKeyDown}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: 0,
+                      width: "100%",
+                      height: `${volume * 100}%`,
+                      backgroundColor: volume === 0 ? "var(--color-destructive)" : "var(--color-accent-blue)",
+                      borderRadius: "3px",
+                      pointerEvents: "none",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: `calc(${volume * 100}% - 6px)`,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: "14px",
+                      height: "14px",
+                      borderRadius: "50%",
+                      backgroundColor: "white",
+                      border: "2px solid var(--color-accent-blue)",
+                      pointerEvents: "none",
+                      transition: volume === 0 ? "border-color 0.2s" : "none",
+                      ...(volume === 0 && { borderColor: "var(--color-destructive)" }),
+                    }}
+                  />
+                </div>
+                <Volume2
+                  size={14}
+                  style={{
+                    color: volume === 0 ? "var(--color-destructive)" : "var(--color-accent-blue)",
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
 

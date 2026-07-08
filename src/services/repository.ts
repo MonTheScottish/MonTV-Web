@@ -97,6 +97,7 @@ export class MonTVRepository {
   private KEY_FAVORITES = "montv_favorites";
   private KEY_RECENTS = "montv_recents";
   private KEY_WORKING_SRC = "montv_working_src_";
+  private KEY_VOLUME = "montv_volume";
 
   constructor() {
     this.cachedUrl = localStorage.getItem(this.KEY_PLAYLIST_URL) || DEFAULT_PLAYLIST_URL;
@@ -171,6 +172,15 @@ export class MonTVRepository {
 
   setLastWorkingSourceIndex(channelId: string, index: number): void {
     localStorage.setItem(this.KEY_WORKING_SRC + channelId, index.toString());
+  }
+
+  getVolume(): number {
+    const val = parseFloat(localStorage.getItem(this.KEY_VOLUME) || "1");
+    return isNaN(val) ? 1 : Math.max(0, Math.min(1, val));
+  }
+
+  setVolume(volume: number): void {
+    localStorage.setItem(this.KEY_VOLUME, volume.toString());
   }
 
   private normalizeChannelName(name: string): string {
