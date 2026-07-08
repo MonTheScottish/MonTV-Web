@@ -863,21 +863,6 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
             </button>
           </div>
 
-          <div
-            style={{
-              fontSize: isMobile ? "11px" : "13px",
-              color: "var(--color-muted)",
-              backgroundColor: "rgba(0,0,0,0.4)",
-              padding: "6px 12px",
-              borderRadius: "4px",
-              border: "1px solid var(--color-border)",
-              display: isMobile ? "none" : "block",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Đang phát ở định dạng HLS
-          </div>
-
           {/* Volume Control Panel */}
           <div
             onMouseEnter={handleVolumeMouseEnter}
