@@ -186,10 +186,21 @@ export class MonTVRepository {
   private normalizeChannelName(name: string): string {
     return name
       .toLowerCase()
+      // Strip (1080p), (720p), (240p), [not 24/7], parentheticals and brackets
+      .replace(/\(([^)]*)\)/g, "")
+      .replace(/\[[^\]]*\]/g, "")
+      // Strip common resolution / quality tokens that confuse exact match
+      .replace(/\b(1080p|720p|480p|360p|240p|144p|4k|2k|uhd|hdr|hevc|h264|h265|av1)\b/g, "")
+      // Strip quality / status tags
+      .replace(/\b(not\s*\d+\s*\/\s*\d+|geo\s*-?\s*blocked|premium)\b/g, "")
+      // Strip prefix/suffix common in IPTV sources: "IPTV.", "|DE", "|EN"
+      .replace(/\s*[|·|].*$/g, "")
       .replace(/\s+/g, "")
-      .replace("hd", "")
-      .replace("sd", "")
-      .replace("fhd", "")
+      // Strip redundant quality/codec words (case-insensitive multi-occurrence)
+      .replace(/hd/g, "")
+      .replace(/sd/g, "")
+      .replace(/fhd/g, "")
+      .replace(/uhd/g, "")
       .replace(/[\[\]\(\)\-_]/g, "")
       .trim();
   }
@@ -452,19 +463,53 @@ export class MonTVRepository {
       try {
         const backupChannels = await this.fetchBackupChannels();
         if (backupChannels.length > 0) {
+          // Index backups under both `name-norm` and `tvgId-base` so we can
+          // match freem3u channels even when the names diverge (iptv-org uses
+          // `VTV3 HD (1080p)`, freem3u uses `VTV3`, freem3u tvgId = `VTV3.VN`).
           const backupMap: Record<string, ChannelUrl[]> = {};
+          const normBackupTvg = (t: string | null | undefined): string => {
+            if (!t) return "";
+            // Strip trailing country code, quality suffix, and codec markers
+            return t
+              .toLowerCase()
+              .replace(/\.vn(@.*)?$/i, "")
+              .replace(/@.*$/g, "")
+              .replace(/\b(hd|sd|fhd|uhd|4k)\b/g, "")
+              .replace(/[\s\-_]/g, "")
+              .trim();
+          };
           backupChannels.forEach((bc) => {
             const normName = this.normalizeChannelName(bc.name);
-            if (normName) {
-              if (!backupMap[normName]) backupMap[normName] = [];
-              backupMap[normName].push({ url: bc.streamUrl, provider: "backup_public" });
+            const normTvg = normBackupTvg(bc.tvgId);
+            const entry: ChannelUrl = { url: bc.streamUrl, provider: "backup_public" };
+            for (const key of [normName, normTvg]) {
+              if (!key) continue;
+              if (!backupMap[key]) backupMap[key] = [];
+              // Avoid duplicate URL within same key bucket.
+              if (!backupMap[key].some((x) => x.url === entry.url)) {
+                backupMap[key].push(entry);
+              }
             }
           });
 
           channels = rawChannels.map((mc) => {
             const normMainName = this.normalizeChannelName(mc.name);
-            const backups = backupMap[normMainName];
-            if (backups && backups.length > 0) {
+            const normMainTvg = (mc.tvgId || "")
+              .toLowerCase()
+              .replace(/\.vn(@.*)?$/i, "")
+              .replace(/@.*$/g, "")
+              .replace(/\b(hd|sd|fhd|uhd|4k)\b/g, "")
+              .replace(/[\s\-_]/g, "")
+              .trim();
+            const merged = new Map<string, ChannelUrl>();
+            for (const key of [normMainName, normMainTvg]) {
+              const list = key ? backupMap[key] || [] : [];
+              for (const bu of list) {
+                if (!merged.has(bu.url)) merged.set(bu.url, bu);
+              }
+            }
+            const backups = Array.from(merged.values());
+            if (backups.length > 0) {
               const uniqueBackups = backups.filter(
                 (bu) => mc.streamUrl !== bu.url && !mc.urls.some((mu) => mu.url === bu.url)
               );
