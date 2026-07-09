@@ -216,6 +216,127 @@ export class MonTVRepository {
       (/(Macintosh)/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
   }
 
+  private cachedPlatform: string | null = null;
+
+  detectPlatform(): "ios" | "android" | "macos" | "windows" | "linux" | "tizen" | "webos" | "androidtv" | "unknown" {
+    if (this.cachedPlatform) return this.cachedPlatform as any;
+    if (typeof navigator === "undefined") return "unknown";
+    const ua = navigator.userAgent || "";
+    let p: string = "unknown";
+    if (/Tizen/i.test(ua)) p = "tizen";
+    else if (/Web0S|webOS/i.test(ua)) p = "webos";
+    else if (/SMART-TV|SmartTV|HBBTV|VIERA/i.test(ua)) p = "tizen";
+    else if (/Android/i.test(ua)) {
+      // Android TV boxes report Android+TV or "AFT" in UA
+      p = /Android TV|Aft[0-9]+|BRAVIA|AFTM[A-Z]+/i.test(ua) ? "androidtv" : "android";
+    } else if (this.isIOS()) p = "ios";
+    else if (/Macintosh/i.test(ua)) p = "macos";
+    else if (/Windows/i.test(ua)) p = "windows";
+    else if (/Linux/i.test(ua)) p = "linux";
+    this.cachedPlatform = p;
+    return p as any;
+  }
+
+  private KEY_FAIL_PREFIX = "montv_fail_";
+  private KEY_BLACKLIST_PREFIX = "montv_blacklist_";
+  private BLACKLIST_TTL_MS = 24 * 60 * 60 * 1000;
+
+  // Returns fail count for (channelId, urlIndex), or 0.
+  getFailCount(channelId: string, urlIndex: number): number {
+    if (typeof localStorage === "undefined") return 0;
+    const raw = localStorage.getItem(this.KEY_FAIL_PREFIX + channelId);
+    if (!raw) return 0;
+    try {
+      const map = JSON.parse(raw) as Record<string, number>;
+      return map[urlIndex] || 0;
+    } catch { return 0; }
+  }
+
+  // Bump fail count for a specific (channelId, urlIndex). Returns the new count.
+  bumpFailCount(channelId: string, urlIndex: number): number {
+    if (typeof localStorage === "undefined") return 0;
+    const key = this.KEY_FAIL_PREFIX + channelId;
+    let map: Record<string, number> = {};
+    try { map = JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch { map = {}; }
+    map[urlIndex] = (map[urlIndex] || 0) + 1;
+    localStorage.setItem(key, JSON.stringify(map));
+    return map[urlIndex];
+  }
+
+  // Reset fail counts when source successfully plays.
+  resetFailCount(channelId: string): void {
+    if (typeof localStorage === "undefined") return;
+    localStorage.removeItem(this.KEY_FAIL_PREFIX + channelId);
+  }
+
+  // Returns true if the source URL has been blacklisted (>= 3 fails) within TTL.
+  isSourceBlacklisted(channelId: string, url: string): boolean {
+    if (typeof localStorage === "undefined") return false;
+    const key = this.KEY_BLACKLIST_PREFIX + channelId;
+    const raw = localStorage.getItem(key);
+    if (!raw) return false;
+    try {
+      const entry = JSON.parse(raw) as { urls: string[]; ts: number };
+      if (Date.now() - entry.ts > this.BLACKLIST_TTL_MS) {
+        localStorage.removeItem(key);
+        return false;
+      }
+      return entry.urls.includes(url);
+    } catch { return false; }
+  }
+
+  blacklistSource(channelId: string, url: string): void {
+    if (typeof localStorage === "undefined") return;
+    const key = this.KEY_BLACKLIST_PREFIX + channelId;
+    let entry: { urls: string[]; ts: number } = { urls: [], ts: Date.now() };
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.ts < this.BLACKLIST_TTL_MS) entry = parsed;
+      }
+    } catch { /* keep default */ }
+    if (!entry.urls.includes(url)) entry.urls.push(url);
+    if (entry.urls.length > 10) entry.urls = entry.urls.slice(-10);
+    localStorage.setItem(key, JSON.stringify(entry));
+  }
+
+  clearBlacklist(channelId: string): void {
+    if (typeof localStorage === "undefined") return;
+    localStorage.removeItem(this.KEY_BLACKLIST_PREFIX + channelId);
+  }
+
+  // Re-orders channel.urls based on detected platform compatibility.
+  // iOS/AndroidTV: prefer non-webview m3u8 first (webview only as last resort).
+  // Desktop/Android: prefer webview (Shaka handles DRM) first.
+  // Blacklisted URLs are demoted to the very end.
+  orderUrlsByPlatform(channel: Channel): ChannelUrl[] {
+    const urls = [...channel.urls];
+    const platform = this.detectPlatform();
+    const score = (u: ChannelUrl): number => {
+      const blacklisted = this.isSourceBlacklisted(channel.id, u.url) ? -1000 : 0;
+      const prov = (u.provider || "hls").toLowerCase();
+      let s = 0;
+      if (prov === "webview") {
+        // iOS and AndroidTV: webview works (FairPlay / Widevine), so it's actually good
+        if (platform === "ios" || platform === "androidtv" || platform === "tizen" || platform === "webos") s = 5;
+        // Other mobile (Android browser): webview works too
+        else if (platform === "android") s = 5;
+        // Desktop: webview is fine
+        else s = 4;
+      } else if (prov === "flow") {
+        s = 3; // resolves via JSON — usually stable
+      } else if (prov === "backup_public") {
+        s = 1; // iptv-org mirror — last resort
+      } else {
+        s = 2; // hls / video
+      }
+      return s + blacklisted;
+    };
+    urls.sort((a, b) => score(b) - score(a));
+    return urls;
+  }
+
   // Some playlist entries carry `?key=<kid>:<key>` inline; surface that
   // for shaka.html to consume as ClearKey.
   private parseInlineKey(url: string): { keyId: string; key: string } | null {

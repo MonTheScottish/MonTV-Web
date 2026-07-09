@@ -20,6 +20,7 @@ export function parseM3U(content: string): Channel[] {
   let currentUserAgent: string | null = null;
   let currentReferer: string | null = null;
   let currentTvgId: string | null = null;
+  let currentTvgChno: number | null = null;
 
   const attrRegex = /([\w-]+)="([^"]*)"/g;
 
@@ -50,6 +51,12 @@ export function parseM3U(content: string): Channel[] {
       currentLogoUrl = attributes["tvg-logo"]?.trim() || null;
       currentTvgId = attributes["tvg-id"]?.trim() || null;
 
+      const chnoRaw = attributes["tvg-chno"] || attributes["channel-number"] || attributes["chno"];
+      if (chnoRaw) {
+        const n = parseInt(chnoRaw, 10);
+        if (!isNaN(n)) currentTvgChno = n;
+      }
+
       if (attributes["tvg-name"] && !currentChannelName) {
         currentChannelName = attributes["tvg-name"].trim();
       }
@@ -68,6 +75,13 @@ export function parseM3U(content: string): Channel[] {
           currentReferer = value;
         }
       }
+      continue;
+    }
+
+    if (trimmedLine.startsWith("#EXTGRP:")) {
+      // #EXTGRP:<group> — overrides group-title for the next channel.
+      const grp = trimmedLine.replace("#EXTGRP:", "").trim();
+      if (grp) currentGroupTitle = grp;
       continue;
     }
 
@@ -117,7 +131,7 @@ export function parseM3U(content: string): Channel[] {
           userAgent,
           referer,
           tvgId: currentTvgId || "",
-          number: channels.length + 1,
+          number: currentTvgChno ?? (channels.length + 1),
           isHidden: false,
           isAudio: false,
         });
@@ -130,6 +144,7 @@ export function parseM3U(content: string): Channel[] {
       currentUserAgent = null;
       currentReferer = null;
       currentTvgId = null;
+      currentTvgChno = null;
     }
   }
 

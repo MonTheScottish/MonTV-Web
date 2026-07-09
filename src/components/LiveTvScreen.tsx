@@ -31,10 +31,18 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
     if (savedSrcIdx !== -1) {
       sourceIndex = savedSrcIdx < channel.urls.length ? savedSrcIdx : 0;
     } else {
-      // Default to webview when present (Shaka Player handles DRM cross-platform);
-      // iOS webview preference is enforced inside repository.resolveChannelStreamUrl.
+      const ordered = repository.orderUrlsByPlatform(channel);
+      const firstUsable = ordered.findIndex(
+        (u) => !repository.isSourceBlacklisted(channel.id, u.url)
+      );
       const webviewIdx = channel.urls.findIndex((u) => u.provider === "webview");
-      sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
+      if (firstUsable !== -1) {
+        const targetUrl = ordered[firstUsable].url;
+        const origIdx = channel.urls.findIndex((u) => u.url === targetUrl);
+        sourceIndex = origIdx !== -1 ? origIdx : (webviewIdx !== -1 ? webviewIdx : 0);
+      } else {
+        sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
+      }
     }
     setActiveSourceIndex(sourceIndex);
   }, [channel.id]);
@@ -72,15 +80,37 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
     };
   }, [channel.id, channel.streamUrl, activeSourceIndex, repository]);
 
-  // Fallback switching reference
-  const handleStreamFailureRef = useRef<() => void>(() => {});
-  handleStreamFailureRef.current = () => {
+  // Fallback switching reference (single attempt — preview only, no infinite loop)
+  const handleStreamFailureRef = useRef<(reason: string) => void>(() => {});
+  handleStreamFailureRef.current = (reason: string = "generic") => {
     const urlsCount = channel.urls.length > 0 ? channel.urls.length : 1;
+    const currentUrl = channel.urls[activeSourceIndex]?.url || "";
+    const failCount = repository.bumpFailCount(channel.id, activeSourceIndex);
+    if (
+      /key|clearkey|fairplay|widevine|drm|manifest|not.?supported/i.test(reason) &&
+      currentUrl
+    ) {
+      repository.blacklistSource(channel.id, currentUrl);
+    }
     if (activeSourceIndex + 1 < urlsCount) {
       const nextIndex = activeSourceIndex + 1;
-      console.log(`MiniPlayer stream failed. Switching to source ${nextIndex}`);
-      repository.setLastWorkingSourceIndex(channel.id, nextIndex);
+      console.log(`MiniPlayer stream failed (${reason}). Switching to source ${nextIndex}`);
       setActiveSourceIndex(nextIndex);
+    } else if (failCount < 2) {
+      // Wrap once to the platform-preferred source so user can see something.
+      const ordered = repository.orderUrlsByPlatform(channel);
+      const candidates = ordered.filter((u) => !repository.isSourceBlacklisted(channel.id, u.url));
+      if (candidates.length > 0) {
+        const wrapUrl = candidates[0].url;
+        const wrapIndex = channel.urls.findIndex((u) => u.url === wrapUrl);
+        if (wrapIndex > activeSourceIndex || wrapIndex === -1) {
+          const target = wrapIndex > activeSourceIndex ? wrapIndex : 0;
+          if (target !== activeSourceIndex) {
+            console.log(`MiniPlayer wrapping to platform-preferred source ${target} (failCount=${failCount})`);
+            setActiveSourceIndex(target);
+          }
+        }
+      }
     }
   };
 
@@ -132,23 +162,41 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
       });
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
+        if (!data.fatal) return;
+        const details = (data.details || "").toString();
+        if (
+          details === Hls.ErrorDetails.KEY_LOAD_ERROR ||
+          details === Hls.ErrorDetails.KEY_LOAD_TIMEOUT ||
+          details === Hls.ErrorDetails.MANIFEST_PARSING_ERROR ||
+          details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR
+        ) {
+          handleStreamFailureRef.current?.(details);
+          return;
+        }
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            if (repository.getFailCount(channel.id, activeSourceIndex) >= 1) {
+              handleStreamFailureRef.current?.(details || "network");
+            } else {
               hls.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
+            }
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            if (repository.getFailCount(channel.id, activeSourceIndex) >= 1) {
+              handleStreamFailureRef.current?.(details || "media");
+            } else {
               hls.recoverMediaError();
-              break;
-            default:
-              handleStreamFailureRef.current?.();
-              break;
-          }
+            }
+            break;
+          default:
+            handleStreamFailureRef.current?.(details || "unknown");
+            break;
         }
       });
     }
 
     const handlePlaying = () => {
+      repository.resetFailCount(channel.id);
       repository.setLastWorkingSourceIndex(channel.id, activeSourceIndex);
       console.log(`MiniPlayer successfully playing channel ${channel.name} at index ${activeSourceIndex}`);
     };
@@ -156,7 +204,10 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
     const handleVideoError = () => {
       if (video.error) {
         console.error("MiniPlayer HTML5 video error:", video.error);
-        handleStreamFailureRef.current?.();
+        const reason = video.error.code === 4 ? "not-supported" :
+                       video.error.code === 5 ? "decode" :
+                       "media";
+        handleStreamFailureRef.current?.(reason);
       }
     };
 

@@ -18,6 +18,18 @@ interface PlayerScreenProps {
   onExit: (finalChannel: Channel) => void;
 }
 
+function translateReason(r: string): string {
+  const k = (r || "").toLowerCase();
+  if (k.includes("key_load") || k.includes("drm") || k.includes("clearkey") || k.includes("fairplay") || k.includes("widevine")) return "lỗi DRM";
+  if (k.includes("manifest")) return "lỗi tải manifest";
+  if (k.includes("not.?supported")) return "codec không hỗ trợ";
+  if (k.includes("decode")) return "lỗi giải mã";
+  if (k.includes("timeout")) return "hết thời gian chờ";
+  if (k.includes("network")) return "mất kết nối mạng";
+  if (k.includes("media")) return "lỗi media";
+  return "nguồn lỗi";
+}
+
 export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   initialChannel,
   channelList,
@@ -284,10 +296,22 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     if (savedSrcIdx !== -1) {
       sourceIndex = savedSrcIdx < currentChannel.urls.length ? savedSrcIdx : 0;
     } else {
-      // Default to webview when present (Shaka Player handles DRM cross-platform);
-      // iOS webview preference is enforced inside repository.resolveChannelStreamUrl.
+      // Use platform-preferred order (skip blacklisted). First non-blacklisted
+      // URL on the platform-aware sort wins.
+      const ordered = repository.orderUrlsByPlatform(currentChannel);
+      const firstUsable = ordered.findIndex(
+        (u) => !repository.isSourceBlacklisted(currentChannel.id, u.url)
+      );
       const webviewIdx = currentChannel.urls.findIndex((u) => u.provider === "webview");
-      sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
+      // Pick the first usable URL's *original* index — that's the index
+      // resolveChannelStreamUrl expects.
+      if (firstUsable !== -1) {
+        const targetUrl = ordered[firstUsable].url;
+        const origIdx = currentChannel.urls.findIndex((u) => u.url === targetUrl);
+        sourceIndex = origIdx !== -1 ? origIdx : (webviewIdx !== -1 ? webviewIdx : 0);
+      } else {
+        sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
+      }
     }
     setActiveSourceIndex(sourceIndex);
   }, [currentChannel]);
@@ -352,29 +376,64 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     };
   }, [currentChannel.id, currentChannel.streamUrl, activeSourceIndex, repository]);
 
-  // Define automatic fallback switching handler with Ref to bypass closures
-  const handleStreamFailureRef = useRef<() => void>(() => {});
-  handleStreamFailureRef.current = () => {
+  // Track total auto-fallback attempts on this channel to prevent infinite loops.
+  const autoAttemptCountRef = useRef(0);
+
+  // Reset attempt counter when the channel changes.
+  useEffect(() => {
+    autoAttemptCountRef.current = 0;
+  }, [currentChannel.id]);
+
+  // Define automatic fallback switching handler with Ref to bypass closures.
+  // wrapAttemptRef lets the caller signal "this was the last source, wrap to 0".
+  const handleStreamFailureRef = useRef<(reason: string) => void>(() => {});
+  handleStreamFailureRef.current = (reason: string = "generic") => {
     const urlsCount = currentChannel.urls.length > 0 ? currentChannel.urls.length : 1;
+    const currentUrl = currentChannel.urls[activeSourceIndex]?.url || "";
+    const failCount = repository.bumpFailCount(currentChannel.id, activeSourceIndex);
+
+    // Classify: KEY_LOAD / manifest parse / not-supported → blacklist this source immediately.
+    if (
+      /key|clearkey|fairplay|widevine|drm|manifest|not.?supported/i.test(reason) &&
+      currentUrl
+    ) {
+      repository.blacklistSource(currentChannel.id, currentUrl);
+      console.warn(`Blacklisting source ${activeSourceIndex} (${currentUrl}) — reason: ${reason}, failCount=${failCount}`);
+    }
+
+    const MAX_AUTO_ATTEMPTS = urlsCount * 2; // wrap once, then stop
+    autoAttemptCountRef.current++;
+
     if (activeSourceIndex + 1 < urlsCount) {
       const nextIndex = activeSourceIndex + 1;
-      console.log(`Stream failed. Automatically switching to source index ${nextIndex}`);
-      setErrorMsg(`Kênh lỗi. Đang tự động đổi sang nguồn dự phòng (${nextIndex + 1}/${urlsCount})...`);
-      
-      // Save last working source index
-      repository.setLastWorkingSourceIndex(currentChannel.id, nextIndex);
-      
-      // Update state to trigger reload
+      console.log(`Stream failed (${reason}). Auto-switching to source ${nextIndex + 1}/${urlsCount}. Attempt ${autoAttemptCountRef.current}/${MAX_AUTO_ATTEMPTS}.`);
+      setErrorMsg(`Kênh lỗi (${translateReason(reason)}). Đang tự động đổi sang nguồn dự phòng (${nextIndex + 1}/${urlsCount})...`);
       setTimeout(() => {
         setActiveSourceIndex(nextIndex);
-      }, 2500); // 2.5 seconds timeout to notify the user
-    } else {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isIOS && isWebView) {
-        setErrorMsg("Nguồn DRM của kênh không phát được trên thiết bị iOS này. Vui lòng bấm 'Đổi nguồn dự phòng' bên dưới để chọn nguồn m3u8 tiêu chuẩn.");
-      } else {
+      }, 2500);
+    } else if (autoAttemptCountRef.current < MAX_AUTO_ATTEMPTS) {
+      // Wrap to first usable source that isn't blacklisted.
+      const platformUrls = repository.orderUrlsByPlatform(currentChannel);
+      const candidates = platformUrls.filter(
+        (u) => !repository.isSourceBlacklisted(currentChannel.id, u.url)
+      );
+      if (candidates.length === 0) {
         setErrorMsg("Tất cả các nguồn phát của kênh đều gặp sự cố. Vui lòng kiểm tra lại kết nối mạng hoặc bấm 'Đổi nguồn dự phòng' để chọn nguồn phát khác.");
+        return;
       }
+      const wrapUrl = candidates[0].url;
+      const wrapIndex = currentChannel.urls.findIndex((u) => u.url === wrapUrl);
+      if (wrapIndex === -1 || wrapIndex === activeSourceIndex) {
+        setErrorMsg("Tất cả các nguồn phát của kênh đều gặp sự cố. Vui lòng kiểm tra lại kết nối mạng hoặc bấm 'Đổi nguồn dự phòng' để chọn nguồn phát khác.");
+        return;
+      }
+      console.log(`All sources exhausted once. Wrapping to platform-preferred source ${wrapIndex + 1}/${urlsCount}.`);
+      setErrorMsg(`Đang thử lại với nguồn phù hợp nhất cho thiết bị của bạn (${wrapIndex + 1}/${urlsCount})...`);
+      setTimeout(() => {
+        setActiveSourceIndex(wrapIndex);
+      }, 2500);
+    } else {
+      setErrorMsg("Đã thử tất cả nguồn phát nhưng không thành công. Bấm 'Đổi nguồn dự phòng' để chọn nguồn phát khác hoặc thử lại sau.");
     }
   };
 
@@ -403,7 +462,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
           return;
         }
         console.warn("Playback loading timed out after 10s. Trying next source...");
-        handleStreamFailureRef.current?.();
+        handleStreamFailureRef.current?.("timeout");
       }, 10000);
     };
 
@@ -462,19 +521,41 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
         console.error("HLS.js error:", data);
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              hls.recoverMediaError();
-              break;
-            default:
+        if (!data.fatal) return;
+        const details = (data.details || "").toString();
+        // Skip-once failures (key/license/manifest). No retry — bump immediately.
+        if (
+          details === Hls.ErrorDetails.KEY_LOAD_ERROR ||
+          details === Hls.ErrorDetails.KEY_LOAD_TIMEOUT ||
+          details === Hls.ErrorDetails.MANIFEST_PARSING_ERROR ||
+          details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR
+        ) {
+          if (loadTimeoutId) clearTimeout(loadTimeoutId);
+          handleStreamFailureRef.current?.(details);
+          return;
+        }
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            // After 1 retry on the same source, give up — switch.
+            if (repository.getFailCount(currentChannel.id, activeSourceIndex) >= 1) {
               if (loadTimeoutId) clearTimeout(loadTimeoutId);
-              handleStreamFailureRef.current?.();
-              break;
-          }
+              handleStreamFailureRef.current?.(details || "network");
+            } else {
+              hls.startLoad();
+            }
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            if (repository.getFailCount(currentChannel.id, activeSourceIndex) >= 1) {
+              if (loadTimeoutId) clearTimeout(loadTimeoutId);
+              handleStreamFailureRef.current?.(details || "media");
+            } else {
+              hls.recoverMediaError();
+            }
+            break;
+          default:
+            if (loadTimeoutId) clearTimeout(loadTimeoutId);
+            handleStreamFailureRef.current?.(details || "unknown");
+            break;
         }
       });
     } else {
@@ -495,6 +576,9 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       setLoading(false);
       setErrorMsg(null);
       if (loadTimeoutId) clearTimeout(loadTimeoutId);
+      // Reset attempt counter on successful playback on this channel.
+      autoAttemptCountRef.current = 0;
+      repository.resetFailCount(currentChannel.id);
       // Lock the successful working source index as the default
       repository.setLastWorkingSourceIndex(currentChannel.id, activeSourceIndex);
       console.log(`Successfully playing channel ${currentChannel.name} at source index ${activeSourceIndex}`);
@@ -503,7 +587,12 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       if (video.error) {
         console.error("HTML5 video error:", video.error);
         if (loadTimeoutId) clearTimeout(loadTimeoutId);
-        handleStreamFailureRef.current?.();
+        // video.error.code 4 = MEDIA_ERR_SRC_NOT_SUPPORTED — common for DRM
+        // / codec mismatch on iOS. 5 = MEDIA_ERR_DECODE. Both are unrecoverable.
+        const reason = video.error.code === 4 ? "not-supported" :
+                       video.error.code === 5 ? "decode" :
+                       "media";
+        handleStreamFailureRef.current?.(reason);
       }
     };
 
