@@ -108,6 +108,14 @@
       // Listen for error events
       player.addEventListener('error', (event) => {
         console.error('Shaka Player error:', event.detail);
+        const code = (event.detail && event.detail.code) || 0;
+        const category = (event.detail && event.detail.category) || 0;
+        window.parent.postMessage({
+          type: 'error',
+          code,
+          category,
+          message: 'Shaka Player error'
+        }, '*');
         showError("Lỗi phát luồng DRM.");
       });
 
@@ -133,12 +141,37 @@
         clearKeys[keyIdParam] = keyParam;
       }
 
-      if (Object.keys(clearKeys).length > 0) {
-        player.configure({
-          drm: {
-            clearKeys: clearKeys
+      const keyserver = urlParams.get('keyserver');
+      const certUrl = urlParams.get('certUrl');
+
+      const drmConfig = {};
+      if (keyserver) {
+        // iOS Safari uses FairPlay; everything else uses Widevine. Let the
+        // platform decide. Both schemes carry through to the serverCertificateUri
+        // when present.
+        if (shaka.util.Platform.isApple()) {
+          drmConfig['servers'] = {
+            'com.apple.streamingkeydelivery': keyserver
+          };
+          if (certUrl) {
+            drmConfig['advanced'] = {
+              'com.apple.streamingkeydelivery': {
+                serverCertificateUri: certUrl
+              }
+            };
           }
-        });
+        } else {
+          drmConfig['servers'] = {
+            'com.widevine.alpha': keyserver
+          };
+        }
+      }
+      if (Object.keys(clearKeys).length > 0) {
+        drmConfig['clearKeys'] = clearKeys;
+      }
+
+      if (Object.keys(drmConfig).length > 0) {
+        player.configure({ drm: drmConfig });
       }
 
       // Apply muted parameter if requested

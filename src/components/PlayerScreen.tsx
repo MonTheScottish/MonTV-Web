@@ -284,15 +284,10 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     if (savedSrcIdx !== -1) {
       sourceIndex = savedSrcIdx < currentChannel.urls.length ? savedSrcIdx : 0;
     } else {
-      // Prioritize standard HLS streams on iOS to avoid Widevine DRM blocks
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isIOS) {
-        const nonWebviewIdx = currentChannel.urls.findIndex((u) => u.provider !== "webview");
-        sourceIndex = nonWebviewIdx !== -1 ? nonWebviewIdx : 0;
-      } else {
-        const webviewIdx = currentChannel.urls.findIndex((u) => u.provider === "webview");
-        sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
-      }
+      // Default to webview when present (Shaka Player handles DRM cross-platform);
+      // iOS webview preference is enforced inside repository.resolveChannelStreamUrl.
+      const webviewIdx = currentChannel.urls.findIndex((u) => u.provider === "webview");
+      sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
     }
     setActiveSourceIndex(sourceIndex);
   }, [currentChannel]);
@@ -376,7 +371,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     } else {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       if (isIOS && isWebView) {
-        setErrorMsg("Thiết bị iOS không hỗ trợ định dạng giải mã DRM Widevine của nguồn phát này. Vui lòng bấm 'Đổi nguồn dự phòng' bên dưới để chọn nguồn m3u8 tiêu chuẩn.");
+        setErrorMsg("Nguồn DRM của kênh không phát được trên thiết bị iOS này. Vui lòng bấm 'Đổi nguồn dự phòng' bên dưới để chọn nguồn m3u8 tiêu chuẩn.");
       } else {
         setErrorMsg("Tất cả các nguồn phát của kênh đều gặp sự cố. Vui lòng kiểm tra lại kết nối mạng hoặc bấm 'Đổi nguồn dự phòng' để chọn nguồn phát khác.");
       }
@@ -690,7 +685,8 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
             backgroundColor: "black",
             display: "block",
           }}
-          allow="autoplay; encrypted-media; picture-in-picture"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-forms"
           allowFullScreen
           onLoad={() => setLoading(false)}
         />

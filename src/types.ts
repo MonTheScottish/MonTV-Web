@@ -38,5 +38,7 @@ export interface ResolvedStream {
   drmScheme?: string | null;
   drmKeyId?: string | null;
   drmKey?: string | null;
+  drmLicenseUrl?: string | null;
+  drmCertUrl?: string | null;
   isWebView?: boolean;
 }

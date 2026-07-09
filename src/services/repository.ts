@@ -209,6 +209,28 @@ export class MonTVRepository {
       .trim();
   }
 
+  isIOS(): boolean {
+    if (typeof navigator === "undefined") return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      // iPad on iOS 13+ reports as Mac with touch points
+      (/(Macintosh)/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  }
+
+  // Some playlist entries carry `?key=<kid>:<key>` inline; surface that
+  // for shaka.html to consume as ClearKey.
+  private parseInlineKey(url: string): { keyId: string; key: string } | null {
+    try {
+      const u = new URL(url, "http://x");
+      const raw = u.searchParams.get("key") || u.searchParams.get("keys");
+      if (!raw) return null;
+      const parts = raw.split(":");
+      if (parts.length !== 2) return null;
+      return { keyId: parts[0].trim(), key: parts[1].trim() };
+    } catch {
+      return null;
+    }
+  }
+
   private async fetchBackupChannels(): Promise<Channel[]> {
     const allBackups: Channel[] = [];
     for (const urlStr of BACKUP_M3U_URLS) {
@@ -555,6 +577,17 @@ export class MonTVRepository {
   async resolveChannelStreamUrl(channel: Channel, urlIndex = 0): Promise<ResolvedStream | null> {
     const urlsToTry = channel.urls.length === 0 ? [{ url: channel.streamUrl, provider: "hls" }] : channel.urls;
 
+    // On iOS Safari, prefer the webview (iframe Shaka) source — Safari has no
+    // Widevine but Shaka handles FairPlay/ClearKey. The caller still picks the
+    // concrete index per savedSrcIdx / platform, so we only redirect when the
+    // caller asked for index 0 (Auto) and a webview entry exists.
+    if (urlIndex === 0 && this.isIOS()) {
+      const webviewIdx = urlsToTry.findIndex((u) => u.provider === "webview");
+      if (webviewIdx > 0) {
+        urlIndex = webviewIdx;
+      }
+    }
+
     if (urlIndex < 0 || urlIndex >= urlsToTry.length) return null;
 
     const channelUrl = urlsToTry[urlIndex];
@@ -578,8 +611,60 @@ export class MonTVRepository {
       if (url.startsWith("https://freem3u.xyz/shaka.html")) {
         resolvedUrl = url.replace("https://freem3u.xyz/shaka.html", "/shaka.html");
       }
+
+      // Surface DRM config from a paired flow source (if any) so the iframe
+      // can license FairPlay/ClearKey content. Mark of pairing is: same channel
+      // has a flow URL whose stream URL matches the webview's stream URL prefix.
+      const pairedFlow = channel.urls.find(
+        (u) => u.provider === "flow" && u.url && u.url.includes("play.m3u8")
+      );
+
+      let drmKey: string | null = null;
+      let drmKeyId: string | null = null;
+      let drmCertUrl: string | null = null;
+      let drmLicenseUrl: string | null = null;
+      let drmScheme: string | null = null;
+
+      const inlineKey = this.parseInlineKey(url);
+      if (inlineKey) {
+        drmKeyId = inlineKey.keyId;
+        drmKey = inlineKey.key;
+        drmScheme = "clearkey";
+      }
+
+      const urlObj = (() => {
+        try { return new URL(resolvedUrl, window.location.origin); } catch { return null; }
+      })();
+      if (urlObj) {
+        const ks = urlObj.searchParams.get("keyserver");
+        const cu = urlObj.searchParams.get("certUrl");
+        if (ks) {
+          drmLicenseUrl = ks;
+          drmScheme = this.isIOS() ? "fairplay" : "widevine";
+        }
+        if (cu) drmCertUrl = cu;
+      }
+
+      void pairedFlow; // pair-resolution deferred to flow resolver below on demand
+
+      // Append ClearKey params so the iframe Shaka config picks them up.
+      if (drmKeyId && drmKey) {
+        try {
+          const u = new URL(resolvedUrl, window.location.origin);
+          if (!u.searchParams.has("keyId")) u.searchParams.set("keyId", drmKeyId);
+          if (!u.searchParams.has("key")) u.searchParams.set("key", drmKey);
+          resolvedUrl = u.pathname + (u.search || "") + (u.hash || "");
+        } catch { /* ignore malformed URL */ }
+      }
+
       return {
         url: resolvedUrl,
+        headers: undefined,
+        drmScheme,
+        drmKeyId,
+        drmKey,
+        drmCertUrl,
+        drmLicenseUrl,
         isWebView: true,
       };
     }
