@@ -318,8 +318,9 @@ export class MonTVRepository {
   }
 
   // Re-orders channel.urls based on detected platform compatibility.
-  // iOS/AndroidTV: prefer non-webview m3u8 first (webview only as last resort).
-  // Desktop/Android: prefer webview (Shaka handles DRM) first.
+  // iOS: prefer flow (JSON-resolved m3u8 → Safari native HLS) > hls > webview
+  //       (Shaka iframe Widevine DRM fails on Safari for most encrypted channels).
+  // Desktop/Android/Smart TV: prefer webview (Shaka handles DRM) first.
   // Blacklisted URLs are demoted to the very end.
   orderUrlsByPlatform(channel: Channel): ChannelUrl[] {
     const urls = [...channel.urls];
@@ -329,18 +330,28 @@ export class MonTVRepository {
       const prov = (u.provider || "hls").toLowerCase();
       let s = 0;
       if (prov === "webview") {
-        // iOS and AndroidTV: webview works (FairPlay / Widevine), so it's actually good
-        if (platform === "ios" || platform === "androidtv" || platform === "tizen" || platform === "webos") s = 5;
-        // Other mobile (Android browser): webview works too
-        else if (platform === "android") s = 5;
-        // Desktop: webview is fine
-        else s = 4;
+        if (platform === "ios") {
+          // iOS Safari: Shaka iframe (Widevine/ClearKey) fails for most DRM
+          // channels (VTV, SCTV, HBO…). Shaka can try FairPlay but depends on
+          // upstream manifest. Low score — user confirmed flow sources work.
+          s = 1;
+        } else if (platform === "androidtv" || platform === "tizen" || platform === "webos") {
+          s = 5; // Smart TV: Shaka handles DRM well
+        } else if (platform === "android") {
+          s = 5; // Android: Shaka Widevine works
+        } else {
+          s = 4; // Desktop: Shaka works
+        }
       } else if (prov === "flow") {
-        s = 3; // resolves via JSON — usually stable
+        // flow → resolves to m3u8 via JSON endpoint. Safari native HLS plays
+        // FairPlay-protected m3u8 natively. On iOS this is the best source.
+        s = platform === "ios" ? 6 : 3;
       } else if (prov === "backup_public") {
-        s = 1; // iptv-org mirror — last resort
+        s = platform === "ios" ? 2 : 1; // iptv-org public m3u8 — works on iOS
       } else {
-        s = 2; // hls / video
+        // hls / video: plain m3u8. On iOS Safari, canPlayType for native HLS
+        // is true so these play fine when not DRM-encrypted.
+        s = platform === "ios" ? 5 : 2;
       }
       return s + blacklisted;
     };
@@ -743,16 +754,9 @@ export class MonTVRepository {
   async resolveChannelStreamUrl(channel: Channel, urlIndex = 0): Promise<ResolvedStream | null> {
     const urlsToTry = channel.urls.length === 0 ? [{ url: channel.streamUrl, provider: "hls" }] : channel.urls;
 
-    // On iOS Safari, prefer the webview (iframe Shaka) source — Safari has no
-    // Widevine but Shaka handles FairPlay/ClearKey. The caller still picks the
-    // concrete index per savedSrcIdx / platform, so we only redirect when the
-    // caller asked for index 0 (Auto) and a webview entry exists.
-    if (urlIndex === 0 && this.isIOS()) {
-      const webviewIdx = urlsToTry.findIndex((u) => u.provider === "webview");
-      if (webviewIdx > 0) {
-        urlIndex = webviewIdx;
-      }
-    }
+    // iOS source priority is now handled entirely by orderUrlsByPlatform()
+    // in the component-level source-pick effect. The repository just resolves
+    // whatever urlIndex the caller passes — no platform override here.
 
     if (urlIndex < 0 || urlIndex >= urlsToTry.length) return null;
 
