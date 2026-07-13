@@ -24,28 +24,27 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
   const [activeSourceIndex, setActiveSourceIndex] = useState(0);
   const [isWebView, setIsWebView] = useState(false);
 
-  // Sync source index when channel changes
+  // Platform-sorted URL list — single source of truth for source indexing.
+  const platformUrls = useMemo(
+    () => repository.getUrlsForChannel(channel),
+    [channel, repository]
+  );
+
+  // Sync source index when channel changes (uses platform-sorted array).
   useEffect(() => {
-    const savedSrcIdx = repository.getLastWorkingSourceIndex(channel.id);
+    const savedUrl = repository.getLastWorkingSourceUrl(channel.id);
     let sourceIndex = 0;
-    if (savedSrcIdx !== -1) {
-      sourceIndex = savedSrcIdx < channel.urls.length ? savedSrcIdx : 0;
+    if (savedUrl) {
+      const idx = platformUrls.findIndex((u) => u.url === savedUrl);
+      sourceIndex = idx !== -1 ? idx : 0;
     } else {
-      const ordered = repository.orderUrlsByPlatform(channel);
-      const firstUsable = ordered.findIndex(
+      const firstUsable = platformUrls.findIndex(
         (u) => !repository.isSourceBlacklisted(channel.id, u.url)
       );
-      const webviewIdx = channel.urls.findIndex((u) => u.provider === "webview");
-      if (firstUsable !== -1) {
-        const targetUrl = ordered[firstUsable].url;
-        const origIdx = channel.urls.findIndex((u) => u.url === targetUrl);
-        sourceIndex = origIdx !== -1 ? origIdx : (webviewIdx !== -1 ? webviewIdx : 0);
-      } else {
-        sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
-      }
+      sourceIndex = firstUsable !== -1 ? firstUsable : 0;
     }
     setActiveSourceIndex(sourceIndex);
-  }, [channel.id]);
+  }, [channel.id, platformUrls, repository]);
 
   // Fetch resolved stream URL when channel or source index changes
   useEffect(() => {
@@ -83,8 +82,8 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
   // Fallback switching reference (single attempt — preview only, no infinite loop)
   const handleStreamFailureRef = useRef<(reason: string) => void>(() => {});
   handleStreamFailureRef.current = (reason: string = "generic") => {
-    const urlsCount = channel.urls.length > 0 ? channel.urls.length : 1;
-    const currentUrl = channel.urls[activeSourceIndex]?.url || "";
+    const urlsCount = platformUrls.length || 1;
+    const currentUrl = platformUrls[activeSourceIndex]?.url || "";
     const failCount = repository.bumpFailCount(channel.id, activeSourceIndex);
     if (
       /key|clearkey|fairplay|widevine|drm|manifest|not.?supported/i.test(reason) &&
@@ -97,18 +96,15 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
       console.log(`MiniPlayer stream failed (${reason}). Switching to source ${nextIndex}`);
       setActiveSourceIndex(nextIndex);
     } else if (failCount < 2) {
-      // Wrap once to the platform-preferred source so user can see something.
-      const ordered = repository.orderUrlsByPlatform(channel);
-      const candidates = ordered.filter((u) => !repository.isSourceBlacklisted(channel.id, u.url));
+      // Wrap once to the first non-blacklisted in platform-sorted order.
+      const candidates = platformUrls.filter(
+        (u) => !repository.isSourceBlacklisted(channel.id, u.url)
+      );
       if (candidates.length > 0) {
-        const wrapUrl = candidates[0].url;
-        const wrapIndex = channel.urls.findIndex((u) => u.url === wrapUrl);
-        if (wrapIndex > activeSourceIndex || wrapIndex === -1) {
-          const target = wrapIndex > activeSourceIndex ? wrapIndex : 0;
-          if (target !== activeSourceIndex) {
-            console.log(`MiniPlayer wrapping to platform-preferred source ${target} (failCount=${failCount})`);
-            setActiveSourceIndex(target);
-          }
+        const wrapIndex = platformUrls.findIndex((u) => u.url === candidates[0].url);
+        if (wrapIndex !== -1 && wrapIndex !== activeSourceIndex) {
+          console.log(`MiniPlayer wrapping to platform-preferred source ${wrapIndex} (failCount=${failCount})`);
+          setActiveSourceIndex(wrapIndex);
         }
       }
     }
@@ -197,7 +193,8 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
 
     const handlePlaying = () => {
       repository.resetFailCount(channel.id);
-      repository.setLastWorkingSourceIndex(channel.id, activeSourceIndex);
+      const playedUrl = platformUrls[activeSourceIndex]?.url;
+      if (playedUrl) repository.setLastWorkingSourceUrl(channel.id, playedUrl);
       console.log(`MiniPlayer successfully playing channel ${channel.name} at index ${activeSourceIndex}`);
     };
 

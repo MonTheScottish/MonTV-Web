@@ -165,13 +165,19 @@ export class MonTVRepository {
     localStorage.setItem(this.KEY_RECENTS, JSON.stringify([]));
   }
 
-  getLastWorkingSourceIndex(channelId: string): number {
+  // Stores the URL string of the last working source (not an index, since
+  // platform-sorted order can change across sessions).
+  getLastWorkingSourceUrl(channelId: string): string | null {
     const val = localStorage.getItem(this.KEY_WORKING_SRC + channelId);
-    return val ? parseInt(val, 10) : -1;
+    if (!val) return null;
+    // Old format was a number (index). If it parses as a number, discard it —
+    // it's stale and points to the wrong array after platform reordering.
+    if (/^\d+$/.test(val)) return null;
+    return val;
   }
 
-  setLastWorkingSourceIndex(channelId: string, index: number): void {
-    localStorage.setItem(this.KEY_WORKING_SRC + channelId, index.toString());
+  setLastWorkingSourceUrl(channelId: string, url: string): void {
+    localStorage.setItem(this.KEY_WORKING_SRC + channelId, url);
   }
 
   getVolume(): number {
@@ -751,12 +757,19 @@ export class MonTVRepository {
     return [];
   }
 
-  async resolveChannelStreamUrl(channel: Channel, urlIndex = 0): Promise<ResolvedStream | null> {
-    const urlsToTry = channel.urls.length === 0 ? [{ url: channel.streamUrl, provider: "hls" }] : channel.urls;
+  // Reorder URLs by platform and return them. This is the single source of
+  // truth for "which URL to try first" — components should use this order
+  // when bumping activeSourceIndex, and resolveChannelStreamUrl uses it too.
+  getUrlsForChannel(channel: Channel): ChannelUrl[] {
+    return this.orderUrlsByPlatform(channel);
+  }
 
-    // iOS source priority is now handled entirely by orderUrlsByPlatform()
-    // in the component-level source-pick effect. The repository just resolves
-    // whatever urlIndex the caller passes — no platform override here.
+  async resolveChannelStreamUrl(channel: Channel, urlIndex = 0): Promise<ResolvedStream | null> {
+    // Always resolve against platform-sorted URLs so the caller's urlIndex
+    // maps to the correct provider regardless of the original array order.
+    const urlsToTry = channel.urls.length === 0
+      ? [{ url: channel.streamUrl, provider: "hls" }]
+      : this.orderUrlsByPlatform(channel);
 
     if (urlIndex < 0 || urlIndex >= urlsToTry.length) return null;
 

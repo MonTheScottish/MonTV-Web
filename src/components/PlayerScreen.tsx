@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Hls from "hls.js";
 import type { Channel, EPGProgram } from "../types";
 import { MonTVRepository } from "../services/repository";
@@ -252,6 +252,12 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     }
   };
 
+  // Platform-sorted URL list — single source of truth for source indexing.
+  const platformUrls = useMemo(
+    () => repository.getUrlsForChannel(currentChannel),
+    [currentChannel, repository]
+  );
+
   // EPG
   const [currentProgram, setCurrentProgram] = useState<EPGProgram | null>(null);
 
@@ -289,29 +295,20 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     );
   });
 
-  // Sync source index with repository setting when channel changes
+  // Sync source index with repository setting when channel changes.
+  // The index is into the PLATFORM-SORTED URL array (getUrlsForChannel).
   useEffect(() => {
-    const savedSrcIdx = repository.getLastWorkingSourceIndex(currentChannel.id);
+    const savedUrl = repository.getLastWorkingSourceUrl(currentChannel.id);
     let sourceIndex = 0;
-    if (savedSrcIdx !== -1) {
-      sourceIndex = savedSrcIdx < currentChannel.urls.length ? savedSrcIdx : 0;
+
+    if (savedUrl) {
+      const idx = platformUrls.findIndex((u) => u.url === savedUrl);
+      sourceIndex = idx !== -1 ? idx : 0;
     } else {
-      // Use platform-preferred order (skip blacklisted). First non-blacklisted
-      // URL on the platform-aware sort wins.
-      const ordered = repository.orderUrlsByPlatform(currentChannel);
-      const firstUsable = ordered.findIndex(
+      const firstUsable = platformUrls.findIndex(
         (u) => !repository.isSourceBlacklisted(currentChannel.id, u.url)
       );
-      const webviewIdx = currentChannel.urls.findIndex((u) => u.provider === "webview");
-      // Pick the first usable URL's *original* index — that's the index
-      // resolveChannelStreamUrl expects.
-      if (firstUsable !== -1) {
-        const targetUrl = ordered[firstUsable].url;
-        const origIdx = currentChannel.urls.findIndex((u) => u.url === targetUrl);
-        sourceIndex = origIdx !== -1 ? origIdx : (webviewIdx !== -1 ? webviewIdx : 0);
-      } else {
-        sourceIndex = webviewIdx !== -1 ? webviewIdx : 0;
-      }
+      sourceIndex = firstUsable !== -1 ? firstUsable : 0;
     }
     setActiveSourceIndex(sourceIndex);
   }, [currentChannel]);
@@ -385,14 +382,14 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   }, [currentChannel.id]);
 
   // Define automatic fallback switching handler with Ref to bypass closures.
-  // wrapAttemptRef lets the caller signal "this was the last source, wrap to 0".
+  // Uses platform-sorted URLs (getUrlsForChannel) for all index math.
   const handleStreamFailureRef = useRef<(reason: string) => void>(() => {});
   handleStreamFailureRef.current = (reason: string = "generic") => {
-    const urlsCount = currentChannel.urls.length > 0 ? currentChannel.urls.length : 1;
-    const currentUrl = currentChannel.urls[activeSourceIndex]?.url || "";
+    const urlsCount = platformUrls.length || 1;
+    const currentUrl = platformUrls[activeSourceIndex]?.url || "";
     const failCount = repository.bumpFailCount(currentChannel.id, activeSourceIndex);
 
-    // Classify: KEY_LOAD / manifest parse / not-supported → blacklist this source immediately.
+    // Classify: KEY_LOAD / manifest parse / not-supported → blacklist immediately.
     if (
       /key|clearkey|fairplay|widevine|drm|manifest|not.?supported/i.test(reason) &&
       currentUrl
@@ -401,7 +398,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       console.warn(`Blacklisting source ${activeSourceIndex} (${currentUrl}) — reason: ${reason}, failCount=${failCount}`);
     }
 
-    const MAX_AUTO_ATTEMPTS = urlsCount * 2; // wrap once, then stop
+    const MAX_AUTO_ATTEMPTS = urlsCount * 2;
     autoAttemptCountRef.current++;
 
     if (activeSourceIndex + 1 < urlsCount) {
@@ -412,8 +409,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
         setActiveSourceIndex(nextIndex);
       }, 2500);
     } else if (autoAttemptCountRef.current < MAX_AUTO_ATTEMPTS) {
-      // Wrap to first usable source that isn't blacklisted.
-      const platformUrls = repository.orderUrlsByPlatform(currentChannel);
+      // Wrap: find first non-blacklisted in platform-sorted order.
       const candidates = platformUrls.filter(
         (u) => !repository.isSourceBlacklisted(currentChannel.id, u.url)
       );
@@ -421,8 +417,9 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
         setErrorMsg("Tất cả các nguồn phát của kênh đều gặp sự cố. Vui lòng kiểm tra lại kết nối mạng hoặc bấm 'Đổi nguồn dự phòng' để chọn nguồn phát khác.");
         return;
       }
-      const wrapUrl = candidates[0].url;
-      const wrapIndex = currentChannel.urls.findIndex((u) => u.url === wrapUrl);
+      const wrapIndex = platformUrls.findIndex(
+        (u) => u.url === candidates[0].url
+      );
       if (wrapIndex === -1 || wrapIndex === activeSourceIndex) {
         setErrorMsg("Tất cả các nguồn phát của kênh đều gặp sự cố. Vui lòng kiểm tra lại kết nối mạng hoặc bấm 'Đổi nguồn dự phòng' để chọn nguồn phát khác.");
         return;
@@ -579,8 +576,9 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       // Reset attempt counter on successful playback on this channel.
       autoAttemptCountRef.current = 0;
       repository.resetFailCount(currentChannel.id);
-      // Lock the successful working source index as the default
-      repository.setLastWorkingSourceIndex(currentChannel.id, activeSourceIndex);
+      // Lock the successful working source as the default (by URL, not index).
+      const playedUrl = platformUrls[activeSourceIndex]?.url;
+      if (playedUrl) repository.setLastWorkingSourceUrl(currentChannel.id, playedUrl);
       console.log(`Successfully playing channel ${currentChannel.name} at source index ${activeSourceIndex}`);
     };
     const handleVideoError = () => {
@@ -719,7 +717,8 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
 
   const handleSourceSelect = (index: number) => {
     setActiveSourceIndex(index);
-    repository.setLastWorkingSourceIndex(currentChannel.id, index);
+    const url = platformUrls[index]?.url;
+    if (url) repository.setLastWorkingSourceUrl(currentChannel.id, url);
     setShowSourceSelector(false);
     
     // Trigger reload
@@ -1099,7 +1098,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                       }
                     }}
                   >
-                    <span>{getSourceDisplayName(currentChannel.urls[activeSourceIndex], activeSourceIndex)}</span>
+                    <span>{getSourceDisplayName(platformUrls[activeSourceIndex] || currentChannel.urls[0], activeSourceIndex)}</span>
                     <ChevronDown size={14} style={{ color: "var(--color-accent-blue-fg)", transform: showSourceSelector ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
                   </button>
 
@@ -1121,7 +1120,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                         zIndex: 30,
                       }}
                     >
-                      {currentChannel.urls.map((u, i) => (
+                      {platformUrls.map((u, i) => (
                         <button
                           key={i}
                           onClick={() => handleSourceSelect(i)}
