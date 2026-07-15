@@ -211,6 +211,15 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
     video.addEventListener("playing", handlePlaying);
     video.addEventListener("error", handleVideoError);
 
+    // Register message handler for iframe webview errors
+    const handleIframeMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === "error") {
+        console.warn("MiniPlayer received error from Shaka WebView:", e.data.message);
+        handleStreamFailureRef.current?.(`shaka_drm_error: ${e.data.code || "unknown"}`);
+      }
+    };
+    window.addEventListener("message", handleIframeMessage);
+
     return () => {
       if (video) {
         video.removeEventListener("loadedmetadata", playVideo);
@@ -222,6 +231,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({ channel, repository }) => {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
+      window.removeEventListener("message", handleIframeMessage);
     };
   }, [streamUrl, resolvedHeaders, activeSourceIndex, channel.id, channel.name, isWebView]);
 
