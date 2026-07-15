@@ -409,7 +409,7 @@ export class MonTVRepository {
         const updatedUrls = [
           fptUrl,
           freeUrl,
-          ...ch.urls.filter((u) => u.provider !== "webview" && u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
+          ...ch.urls.filter((u) => u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
         ];
         return {
           ...ch,
@@ -424,7 +424,7 @@ export class MonTVRepository {
         };
         const updatedUrls = [
           workingUrl,
-          ...ch.urls.filter((u) => u.provider !== "webview" && u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
+          ...ch.urls.filter((u) => u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
         ];
         return {
           ...ch,
@@ -439,7 +439,7 @@ export class MonTVRepository {
         };
         const updatedUrls = [
           workingUrl,
-          ...ch.urls.filter((u) => u.provider !== "webview" && u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
+          ...ch.urls.filter((u) => u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
         ];
         return {
           ...ch,
