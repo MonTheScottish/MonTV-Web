@@ -806,7 +806,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     };
   }, [currentChannel, channelList]);
 
-  // Listen for videoState and userInteraction events from shaka.html iframe
+  // Listen for videoState, userInteraction and error events from shaka.html iframe
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       if (e.data) {
@@ -814,6 +814,9 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
           setIsPlaying(!!e.data.isPlaying);
         } else if (e.data.type === "userInteraction") {
           resetControlsTimeout();
+        } else if (e.data.type === "error") {
+          console.warn("Received error from Shaka WebView:", e.data.message);
+          handleStreamFailureRef.current(`shaka_drm_error: ${e.data.code || "unknown"}`);
         }
       }
     };
