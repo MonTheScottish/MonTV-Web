@@ -409,10 +409,6 @@ export class MonTVRepository {
         const updatedUrls = [
           fptUrl,
           freeUrl,
-          {
-            url: "https://freem3u.xyz/shaka.html?videoUrl=https://livevlisctcdnw.seenow.vn/livesnv2/VTV2_HD/manifest.mpd&keys=a7c942778e874d43be92b8d0a0cd11b4:6d54358306571658ffdb952c6560688b",
-            provider: "webview"
-          },
           ...ch.urls.filter((u) => u.provider !== "webview" && u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
         ];
         return {
@@ -428,10 +424,6 @@ export class MonTVRepository {
         };
         const updatedUrls = [
           workingUrl,
-          {
-            url: "https://freem3u.xyz/shaka.html?videoUrl=https://livebytsct.vtvprime.vn/livesnv2/VTV3_HD/manifest.mpd&keys=a7c942778e874d43be92b8d0a0cd11b4:6d54358306571658ffdb952c6560688b",
-            provider: "webview"
-          },
           ...ch.urls.filter((u) => u.provider !== "webview" && u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
         ];
         return {
@@ -447,11 +439,7 @@ export class MonTVRepository {
         };
         const updatedUrls = [
           workingUrl,
-          {
-            url: "https://freem3u.xyz/shaka.html?videoUrl=https://livebytsct.vtvprime.vn/livesnv2/VTV1_HD/manifest.mpd&keys=a7c942778e874d43be92b8d0a0cd11b4:6d54358306571658ffdb952c6560688b",
-            provider: "webview"
-          },
-          ...ch.urls.filter((u) => u.provider !== "webview" && !u.url.includes("toiyeuvietnam.dpdns.org"))
+          ...ch.urls.filter((u) => u.provider !== "webview" && u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
         ];
         return {
           ...ch,
