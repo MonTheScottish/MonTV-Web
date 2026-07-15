@@ -372,7 +372,8 @@ export class MonTVRepository {
       const u = new URL(url, "http://x");
       const raw = u.searchParams.get("key") || u.searchParams.get("keys");
       if (!raw) return null;
-      const parts = raw.split(":");
+      const firstPair = raw.split(",")[0];
+      const parts = firstPair.split(":");
       if (parts.length !== 2) return null;
       return { keyId: parts[0].trim(), key: parts[1].trim() };
     } catch {

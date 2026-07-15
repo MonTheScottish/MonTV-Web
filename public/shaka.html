@@ -132,13 +132,16 @@
       // Configure DRM / ClearKey
       const clearKeys = {};
       if (keysParam) {
-        // Format: key_id_hex:key_hex
-        const parts = keysParam.split(':');
-        if (parts.length === 2) {
-          clearKeys[parts[0]] = parts[1];
-        }
+        // Format: key_id_hex:key_hex,key_id2:key2...
+        const pairs = keysParam.split(',');
+        pairs.forEach(pair => {
+          const parts = pair.split(':');
+          if (parts.length === 2) {
+            clearKeys[parts[0].trim()] = parts[1].trim();
+          }
+        });
       } else if (keyIdParam && keyParam) {
-        clearKeys[keyIdParam] = keyParam;
+        clearKeys[keyIdParam.trim()] = keyParam.trim();
       }
 
       const keyserver = urlParams.get('keyserver');
