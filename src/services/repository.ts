@@ -398,53 +398,71 @@ export class MonTVRepository {
   private postProcessChannels(channels: Channel[]): Channel[] {
     const processed = channels.map((ch) => {
       if (ch.id === "vtv2") {
-        const fptUrl: ChannelUrl = {
-          url: "https://live-a.fptplay53.net/fnxch2/vtv2hd_abr.smil/chunklist.m3u8",
-          provider: "hls",
-        };
-        const freeUrl: ChannelUrl = {
-          url: "https://freem3u.xyz/api/live/play.m3u8?vid=3",
-          provider: "hls",
-        };
-        const updatedUrls = [
-          fptUrl,
-          freeUrl,
-          ...ch.urls.filter((u) => u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
-        ];
+        const filteredUrls = ch.urls.filter((u) => 
+          u.provider !== "flow" && 
+          !u.url.includes("toiyeuvietnam.dpdns.org") &&
+          !u.url.includes("fptplay53.net") &&
+          !u.url.includes("play.m3u8?vid=")
+        );
+        // Find webview URL or create default
+        let webviewUrl = filteredUrls.find((u) => u.provider === "webview")?.url;
+        if (!webviewUrl) {
+          webviewUrl = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV2_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9";
+          filteredUrls.unshift({ url: webviewUrl, provider: "webview" });
+        }
         return {
           ...ch,
-          streamUrl: fptUrl.url,
-          urls: updatedUrls,
+          streamUrl: webviewUrl,
+          urls: filteredUrls,
         };
       }
       if (ch.id === "vtv3") {
-        const workingUrl: ChannelUrl = {
-          url: "https://freem3u.xyz/api/live/play.m3u8?vid=4",
-          provider: "hls",
-        };
-        const updatedUrls = [
-          workingUrl,
-          ...ch.urls.filter((u) => u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
-        ];
+        let filteredUrls = ch.urls.filter((u) => 
+          u.provider !== "flow" && 
+          !u.url.includes("toiyeuvietnam.dpdns.org") &&
+          !u.url.includes("fptplay53.net") &&
+          !u.url.includes("play.m3u8?vid=")
+        );
+        // Find webview URL, fix key, or create default
+        let foundWebview = false;
+        filteredUrls = filteredUrls.map((u) => {
+          if (u.provider === "webview") {
+            foundWebview = true;
+            let fixedUrl = u.url;
+            if (!fixedUrl.includes("2c00d6f2992141b99bee7abc5a9cc687")) {
+              fixedUrl = fixedUrl + ",2c00d6f2992141b99bee7abc5a9cc687:ec57977de110995b8fc5d42e4ffdbcc9";
+            }
+            return { ...u, url: fixedUrl };
+          }
+          return u;
+        });
+        if (!foundWebview) {
+          const webviewUrl = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV3_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9,2c00d6f2992141b99bee7abc5a9cc687:ec57977de110995b8fc5d42e4ffdbcc9";
+          filteredUrls.unshift({ url: webviewUrl, provider: "webview" });
+        }
+        const finalWebviewUrl = filteredUrls.find((u) => u.provider === "webview")?.url || "";
         return {
           ...ch,
-          streamUrl: workingUrl.url,
-          urls: updatedUrls,
+          streamUrl: finalWebviewUrl,
+          urls: filteredUrls,
         };
       }
       if (ch.id === "vtv1") {
-        const workingUrl: ChannelUrl = {
-          url: "https://live-a.fptplay53.net/live/media/vtv1/live247-hls-avc/index.m3u8",
-          provider: "hls",
-        };
-        const updatedUrls = [
-          workingUrl,
-          ...ch.urls.filter((u) => u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
-        ];
+        const filteredUrls = ch.urls.filter((u) => 
+          u.provider !== "flow" && 
+          !u.url.includes("toiyeuvietnam.dpdns.org") &&
+          !u.url.includes("fptplay53.net") &&
+          !u.url.includes("play.m3u8?vid=")
+        );
+        let webviewUrl = filteredUrls.find((u) => u.provider === "webview")?.url;
+        if (!webviewUrl) {
+          webviewUrl = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV1_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9";
+          filteredUrls.unshift({ url: webviewUrl, provider: "webview" });
+        }
         return {
           ...ch,
-          streamUrl: workingUrl.url,
-          urls: updatedUrls,
+          streamUrl: webviewUrl,
+          urls: filteredUrls,
         };
       }
       if (ch.id.startsWith("boxmovie_")) {
