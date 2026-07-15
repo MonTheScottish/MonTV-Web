@@ -397,6 +397,56 @@ export class MonTVRepository {
 
   private postProcessChannels(channels: Channel[]): Channel[] {
     const processed = channels.map((ch) => {
+      if (ch.id === "vtv2") {
+        const fptUrl: ChannelUrl = {
+          url: "https://live-a.fptplay53.net/fnxch2/vtv2hd_abr.smil/chunklist.m3u8",
+          provider: "hls",
+        };
+        const freeUrl: ChannelUrl = {
+          url: "https://freem3u.xyz/api/live/play.m3u8?vid=3",
+          provider: "hls",
+        };
+        const updatedUrls = [
+          fptUrl,
+          freeUrl,
+          ...ch.urls.filter((u) => u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
+        ];
+        return {
+          ...ch,
+          streamUrl: fptUrl.url,
+          urls: updatedUrls,
+        };
+      }
+      if (ch.id === "vtv3") {
+        const workingUrl: ChannelUrl = {
+          url: "https://freem3u.xyz/api/live/play.m3u8?vid=4",
+          provider: "hls",
+        };
+        const updatedUrls = [
+          workingUrl,
+          ...ch.urls.filter((u) => u.provider !== "flow" && !u.url.includes("toiyeuvietnam.dpdns.org"))
+        ];
+        return {
+          ...ch,
+          streamUrl: workingUrl.url,
+          urls: updatedUrls,
+        };
+      }
+      if (ch.id === "vtv1") {
+        const workingUrl: ChannelUrl = {
+          url: "https://live-a.fptplay53.net/live/media/vtv1/live247-hls-avc/index.m3u8",
+          provider: "hls",
+        };
+        const updatedUrls = [
+          workingUrl,
+          ...ch.urls.filter((u) => !u.url.includes("toiyeuvietnam.dpdns.org"))
+        ];
+        return {
+          ...ch,
+          streamUrl: workingUrl.url,
+          urls: updatedUrls,
+        };
+      }
       if (ch.id.startsWith("boxmovie_")) {
         const workingUrl: ChannelUrl = {
           url: "https://toiyeuvietnam.dpdns.org/OnliveTV/box-movie-1-hd/Free.m3u8",

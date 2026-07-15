@@ -55,6 +55,12 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   const [activeSourceIndex, setActiveSourceIndex] = useState(0);
   const [showSourceSelector, setShowSourceSelector] = useState(false);
 
+  // AirPlay & Google Cast states
+  const [airplayAvailable, setAirplayAvailable] = useState(false);
+  const [castAvailable, setCastAvailable] = useState(false);
+
+
+
   // Control overlay states
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<any>(null);
@@ -264,6 +270,127 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+
+  // Detect AirPlay availability
+  useEffect(() => {
+    if (isWebView) {
+      setAirplayAvailable(false);
+      return;
+    }
+
+    // AirPlay is only available on Apple devices (iOS/macOS)
+    const isAppleDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                          (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document) ||
+                          (/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent));
+    
+    if (!isAppleDevice) {
+      setAirplayAvailable(false);
+      return;
+    }
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.setAttribute("x-webkit-airplay", "allow");
+    video.setAttribute("airplay", "allow");
+
+    const handleAvailabilityChanged = (event: any) => {
+      setAirplayAvailable(event.availability === "available");
+    };
+
+    video.addEventListener("webkitplaybacktargetavailabilitychanged", handleAvailabilityChanged);
+    
+    if ((window as any).WebKitPlaybackTargetAvailabilityEvent) {
+      setAirplayAvailable(true);
+    }
+
+    return () => {
+      video.removeEventListener("webkitplaybacktargetavailabilitychanged", handleAvailabilityChanged);
+    };
+  }, [videoRef.current, isWebView, loading]);
+
+  const triggerAirPlay = () => {
+    const video = videoRef.current;
+    if (video && (video as any).webkitShowPlaybackTargetPicker) {
+      (video as any).webkitShowPlaybackTargetPicker();
+    }
+  };
+
+  // Google Cast SDK Initialization
+  useEffect(() => {
+    // Check if on iOS/macOS Safari target - if so, do not initialize Chromecast
+    const isIOSPlatform = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                          (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
+    if (isIOSPlatform) {
+      setCastAvailable(false);
+      return;
+    }
+
+    const castScriptId = "google-cast-sdk-script";
+    const script = document.getElementById(castScriptId) as HTMLScriptElement | null;
+    if (!script) {
+      const newScript = document.createElement("script");
+      newScript.id = castScriptId;
+      newScript.src = "https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1";
+      newScript.async = true;
+      document.body.appendChild(newScript);
+    }
+
+    const initializeCast = () => {
+      const cast = (window as any).cast;
+      const chrome = (window as any).chrome;
+      if (cast && cast.framework && chrome && chrome.cast) {
+        try {
+          const context = cast.framework.CastContext.getInstance();
+          context.setOptions({
+            receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+            autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
+          });
+          setCastAvailable(true);
+        } catch (e) {
+          console.warn("Cast initialization failed:", e);
+        }
+      }
+    };
+
+    if ((window as any).chrome?.cast && (window as any).cast?.framework) {
+      initializeCast();
+    } else {
+      (window as any).__onGCastApiAvailable = (isAvailable: boolean) => {
+        if (isAvailable) {
+          initializeCast();
+        }
+      };
+    }
+  }, []);
+
+  const handleCastClick = () => {
+    const cast = (window as any).cast;
+    const chrome = (window as any).chrome;
+    if (!cast || !chrome || !streamUrl) return;
+
+    const context = cast.framework.CastContext.getInstance();
+    context.requestSession().then(
+      (session: any) => {
+        const mediaInfo = new chrome.cast.media.MediaInfo(streamUrl, 'application/vnd.apple.mpegurl');
+        const metadata = new chrome.cast.media.GenericMediaMetadata();
+        metadata.title = currentChannel.name;
+        if (currentChannel.logoUrl) {
+          metadata.images = [{ url: currentChannel.logoUrl }];
+        }
+        mediaInfo.metadata = metadata;
+
+        const request = new chrome.cast.media.LoadRequest(mediaInfo);
+        session.loadMedia(request).then(
+          () => console.log("Casting successfully"),
+          (err: any) => console.error("Cast media load error:", err)
+        );
+      },
+      (err: any) => {
+        console.warn("Cast session error:", err);
+      }
+    );
+  };
 
   // Reset controls timer
   const resetControlsTimeout = () => {
@@ -1289,19 +1416,129 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               )}
             </div>
 
-            {/* Right: Volume Control */}
+            {/* Right: Cast/AirPlay & Volume Control */}
             <div
-              onMouseEnter={handleVolumeMouseEnter}
-              onMouseLeave={handleVolumeMouseLeave}
               style={{
-                position: "relative",
-                display: isMobile ? "none" : "flex",
-                justifyContent: "flex-end",
+                display: "flex",
                 alignItems: "center",
-                gap: "0",
-                minWidth: "150px",
+                justifyContent: isMobile ? "center" : "flex-end",
+                gap: "12px",
+                minWidth: isMobile ? "auto" : "180px",
               }}
             >
+              {/* Cast & AirPlay buttons */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {airplayAvailable && (
+                  <button
+                    onClick={triggerAirPlay}
+                    title="Phát qua AirPlay"
+                    aria-label="Phát qua AirPlay"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      cursor: "pointer",
+                      padding: "10px",
+                      borderRadius: "50%",
+                      width: "44px",
+                      height: "44px",
+                      backgroundColor: "var(--color-control-glass)",
+                      border: "1px solid var(--color-control-border)",
+                      backdropFilter: "blur(12px)",
+                      transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
+                      e.currentTarget.style.borderColor = "var(--color-control-border-active)";
+                      e.currentTarget.style.transform = "scale(1.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
+                      e.currentTarget.style.borderColor = "var(--color-control-border)";
+                      e.currentTarget.style.transform = "scale(1)";
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1" />
+                      <polygon points="12 15 17 21 7 21 12 15" />
+                    </svg>
+                  </button>
+                )}
+
+                {castAvailable && (
+                  <button
+                    onClick={handleCastClick}
+                    title="Truyền hình ảnh (Cast)"
+                    aria-label="Truyền hình ảnh (Cast)"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      cursor: "pointer",
+                      padding: "10px",
+                      borderRadius: "50%",
+                      width: "44px",
+                      height: "44px",
+                      backgroundColor: "var(--color-control-glass)",
+                      border: "1px solid var(--color-control-border)",
+                      backdropFilter: "blur(12px)",
+                      transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
+                      e.currentTarget.style.borderColor = "var(--color-control-border-active)";
+                      e.currentTarget.style.transform = "scale(1.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
+                      e.currentTarget.style.borderColor = "var(--color-control-border)";
+                      e.currentTarget.style.transform = "scale(1)";
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M2 12a10 10 0 0 1 10 10M2 17a5 5 0 0 1 5 5M2 8a14 14 0 0 1 14 14" />
+                      <path d="M2 20h.01" />
+                      <path d="M5 3h15a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6M2 3v2" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Volume Control */}
+              <div
+                onMouseEnter={handleVolumeMouseEnter}
+                onMouseLeave={handleVolumeMouseLeave}
+                style={{
+                  position: "relative",
+                  display: isMobile ? "none" : "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  gap: "0",
+                  minWidth: "150px",
+                }}
+              >
               <button
                 onClick={toggleMute}
                 aria-label={volume === 0 ? "Bật tiếng" : "Tắt tiếng"}
@@ -1422,6 +1659,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                 </div>
               )}
             </div>
+          </div>
           </div>
         </div>
       </div>
