@@ -449,7 +449,13 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     const savedUrl = repository.getLastWorkingSourceUrl(currentChannel.id);
     let sourceIndex = 0;
 
-    if (savedUrl) {
+    const isIos = repository.detectPlatform() === "ios";
+    const hasVtvgo = platformUrls.some((u) => u.provider === "vtvgo");
+
+    if (isIos && hasVtvgo) {
+      const idx = platformUrls.findIndex((u) => u.provider === "vtvgo");
+      sourceIndex = idx !== -1 ? idx : 0;
+    } else if (savedUrl) {
       const idx = platformUrls.findIndex((u) => u.url === savedUrl);
       sourceIndex = idx !== -1 ? idx : 0;
     } else {
@@ -459,7 +465,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
       sourceIndex = firstUsable !== -1 ? firstUsable : 0;
     }
     setActiveSourceIndex(sourceIndex);
-  }, [currentChannel]);
+  }, [currentChannel, platformUrls]);
 
   // Fetch resolved stream URL when channel or source index changes
   useEffect(() => {
