@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MonTVRepository } from "../services/repository";
-import { Tv, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 interface SplashScreenProps {
   repository: MonTVRepository;
@@ -91,7 +91,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <Tv size={48} className="pulse-badge" style={{ color: "var(--color-accent-blue)" }} />
+        <img src="/logo.png" alt="MonTV Logo" className="pulse-badge" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "14px" }} />
         <h1 style={{ fontSize: "36px", fontWeight: 700, letterSpacing: "1px" }}>
           Mon<span style={{ color: "var(--color-accent-blue)" }}>TV</span>
         </h1>
