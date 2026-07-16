@@ -400,73 +400,67 @@ export class MonTVRepository {
 
   private postProcessChannels(channels: Channel[]): Channel[] {
     const processed = channels.map((ch) => {
-      if (ch.id === "vtv2" || ch.id.startsWith("vtv2_")) {
-        const filteredUrls = ch.urls.filter((u) => 
-          u.provider !== "flow" && 
-          !u.url.includes("toiyeuvietnam.dpdns.org") &&
-          !u.url.includes("fptplay53.net") &&
-          !u.url.includes("play.m3u8?vid=")
-        );
-        filteredUrls.unshift({ url: "2", provider: "vtvgo" });
-        let webviewUrl = filteredUrls.find((u) => u.provider === "webview")?.url;
-        if (!webviewUrl) {
-          webviewUrl = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV2_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9";
-          filteredUrls.push({ url: webviewUrl, provider: "webview" });
-        }
-        return {
-          ...ch,
-          streamUrl: "2",
-          urls: filteredUrls,
-        };
-      }
-      if (ch.id === "vtv3" || ch.id.startsWith("vtv3_")) {
-        let filteredUrls = ch.urls.filter((u) => 
-          u.provider !== "flow" && 
-          !u.url.includes("toiyeuvietnam.dpdns.org") &&
-          !u.url.includes("fptplay53.net") &&
-          !u.url.includes("play.m3u8?vid=")
-        );
-        filteredUrls.unshift({ url: "3", provider: "vtvgo" });
-        let foundWebview = false;
-        filteredUrls = filteredUrls.map((u) => {
-          if (u.provider === "webview") {
-            foundWebview = true;
-            let fixedUrl = u.url;
-            if (!fixedUrl.includes("2c00d6f2992141b99bee7abc5a9cc687")) {
-              fixedUrl = fixedUrl + ",2c00d6f2992141b99bee7abc5a9cc687:ec57977de110995b8fc5d42e4ffdbcc9";
+      // Generic mapper for all VTV channels using VTVgo
+      const vtvMatch = ch.id.match(/^vtv([1-9]|5-tay-nam-bo|5-tay-nguyen|-can-tho)(_|$)/);
+      if (vtvMatch) {
+        const type = vtvMatch[1];
+        let vtvgoId = "";
+        if (type === "1") vtvgoId = "1";
+        else if (type === "2") vtvgoId = "2";
+        else if (type === "3") vtvgoId = "3";
+        else if (type === "4") vtvgoId = "4";
+        else if (type === "5") vtvgoId = "5";
+        else if (type === "-can-tho") vtvgoId = "6";
+        else if (type === "7") vtvgoId = "7";
+        else if (type === "8") vtvgoId = "8";
+        else if (type === "9") vtvgoId = "9";
+        else if (type === "5-tay-nguyen") vtvgoId = "10";
+        else if (type === "5-tay-nam-bo") vtvgoId = "11";
+
+        if (vtvgoId) {
+          const filteredUrls = ch.urls.filter((u) => 
+            u.provider !== "flow" && 
+            !u.url.includes("toiyeuvietnam.dpdns.org") &&
+            !u.url.includes("fptplay53.net") &&
+            !u.url.includes("play.m3u8?vid=")
+          );
+          
+          filteredUrls.unshift({ url: vtvgoId, provider: "vtvgo" });
+
+          let foundWebview = false;
+          const mappedUrls = filteredUrls.map((u) => {
+            if (u.provider === "webview") {
+              foundWebview = true;
+              let fixedUrl = u.url;
+              if (vtvgoId === "3" && !fixedUrl.includes("2c00d6f2992141b99bee7abc5a9cc687")) {
+                fixedUrl = fixedUrl + ",2c00d6f2992141b99bee7abc5a9cc687:ec57977de110995b8fc5d42e4ffdbcc9";
+              }
+              return { ...u, url: fixedUrl };
             }
-            return { ...u, url: fixedUrl };
+            return u;
+          });
+
+          if (!foundWebview) {
+            let fallbackWebview = "";
+            if (vtvgoId === "1") {
+              fallbackWebview = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV1_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9";
+            } else if (vtvgoId === "2") {
+              fallbackWebview = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV2_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9";
+            } else if (vtvgoId === "3") {
+              fallbackWebview = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV3_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9,2c00d6f2992141b99bee7abc5a9cc687:ec57977de110995b8fc5d42e4ffdbcc9";
+            } else {
+              const chanUpper = `VTV${vtvgoId === "6" ? "6" : vtvgoId === "10" ? "5_TN" : vtvgoId === "11" ? "5_TNB" : vtvgoId}_HD`;
+              fallbackWebview = `https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/${chanUpper}/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9`;
+            }
+            mappedUrls.push({ url: fallbackWebview, provider: "webview" });
           }
-          return u;
-        });
-        if (!foundWebview) {
-          const webviewUrl = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV3_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9,2c00d6f2992141b99bee7abc5a9cc687:ec57977de110995b8fc5d42e4ffdbcc9";
-          filteredUrls.push({ url: webviewUrl, provider: "webview" });
+
+          return {
+            ...ch,
+            streamUrl: vtvgoId,
+            urls: mappedUrls,
+          };
         }
-        return {
-          ...ch,
-          streamUrl: "3",
-          urls: filteredUrls,
-        };
-      }
-      if (ch.id === "vtv1" || ch.id.startsWith("vtv1_")) {
-        const filteredUrls = ch.urls.filter((u) => 
-          u.provider !== "flow" && 
-          !u.url.includes("toiyeuvietnam.dpdns.org") &&
-          !u.url.includes("fptplay53.net") &&
-          !u.url.includes("play.m3u8?vid=")
-        );
-        filteredUrls.unshift({ url: "1", provider: "vtvgo" });
-        let webviewUrl = filteredUrls.find((u) => u.provider === "webview")?.url;
-        if (!webviewUrl) {
-          webviewUrl = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV1_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9";
-          filteredUrls.push({ url: webviewUrl, provider: "webview" });
-        }
-        return {
-          ...ch,
-          streamUrl: "1",
-          urls: filteredUrls,
-        };
       }
       if (ch.id.startsWith("boxmovie_")) {
         const workingUrl: ChannelUrl = {

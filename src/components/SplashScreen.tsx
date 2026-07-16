@@ -90,7 +90,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         gap: "24px",
       }}
     >
-      <img src="/logo.png" alt="MonTV Logo" className="pulse-badge" style={{ width: "128px", height: "128px", objectFit: "contain" }} />
+      <img src="/logo.webp" alt="MonTV Logo" className="pulse-badge" style={{ width: "128px", height: "128px", objectFit: "contain" }} />
 
       {error ? (
         <div
