@@ -448,18 +448,9 @@ export class MonTVRepository {
               filteredUrls.push({ url: workingHls, provider: "hls" });
             }
           } else if (vtvgoId === "2") {
-            const workingHls1 = "https://live-a.fptplay53.net/fnxch2/vtv2hd_abr.smil/chunklist.m3u8";
-            const workingHls2 = "https://freem3u.xyz/api/live/play.m3u8?vid=3";
+            const workingHls1 = "https://live.fptplay53.net/fnxch2/vtv2hd_abr.smil/chunklist.m3u8";
             if (!filteredUrls.some((u) => u.url === workingHls1)) {
               filteredUrls.push({ url: workingHls1, provider: "hls" });
-            }
-            if (!filteredUrls.some((u) => u.url === workingHls2)) {
-              filteredUrls.push({ url: workingHls2, provider: "hls" });
-            }
-          } else if (vtvgoId === "3") {
-            const workingHls = "https://freem3u.xyz/api/live/play.m3u8?vid=4";
-            if (!filteredUrls.some((u) => u.url === workingHls)) {
-              filteredUrls.push({ url: workingHls, provider: "hls" });
             }
           }
           
