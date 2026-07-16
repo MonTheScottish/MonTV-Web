@@ -415,8 +415,8 @@ export class MonTVRepository {
         if (type === "5-tay-nguyen") {
           return {
             ...ch,
-            streamUrl: "10",
-            urls: [{ url: "10", provider: "vtvgo" }],
+            streamUrl: "163",
+            urls: [{ url: "163", provider: "vtvgo" }],
           };
         }
         let vtvgoId = "";
