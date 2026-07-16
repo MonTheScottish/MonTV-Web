@@ -400,7 +400,8 @@ export class MonTVRepository {
 
   private postProcessChannels(channels: Channel[]): Channel[] {
     const processed = channels.map((ch) => {
-      // Generic mapper for VTV channels (excluding VTV7) using VTVgo
+      // Generic mapper for all VTV channels (VTV1-6, VTV8-9, regional variants, and VTV Cần Thơ / VTV10) using VTVgo
+      // Note: VTV7 is excluded because VTVgo ID 7 broadcasts VTV5 Tây Nam Bộ in real life.
       const vtvMatch = ch.id.match(/^vtv([1-689]|5-tay-nam-bo|5-tay-nguyen|-can-tho)(_|$)/);
       if (vtvMatch) {
         const type = vtvMatch[1];
@@ -424,11 +425,6 @@ export class MonTVRepository {
             !u.url.includes("play.m3u8?vid=")
           );
           
-          if (type === "7") {
-            // Filter out the mislabeled VTV5 TNB stream from VTV7
-            filteredUrls = filteredUrls.filter((u) => !u.url.includes("vtv7hd_vhls.smil"));
-          }
-          
           if (type === "5-tay-nam-bo") {
             // Add the vtv7hd_vhls.smil URL to VTV5 TNB if it is not already present
             const hasVtv7Stream = filteredUrls.some((u) => u.url.includes("vtv7hd_vhls.smil"));
@@ -436,6 +432,14 @@ export class MonTVRepository {
               filteredUrls.push({
                 url: "https://live.fptplay53.net/fnxhd1/vtv7hd_vhls.smil/chunklist.m3u8",
                 provider: "hls",
+              });
+            }
+            // Add VTVgo ID 7 as a backup source for VTV5 TNB (since it streams VTV5 TNB in real life)
+            const hasVtvgo7 = filteredUrls.some((u) => u.provider === "vtvgo" && u.url === "7");
+            if (!hasVtvgo7) {
+              filteredUrls.push({
+                url: "7",
+                provider: "vtvgo",
               });
             }
           }
@@ -477,16 +481,14 @@ export class MonTVRepository {
           };
         }
       }
-      // For VTV7: filter out the mislabeled VTV5 TNB stream and incorrect VTVgo stream, ensure correct webview
+
+      // Explicit handler for VTV7 (filter out VTVgo ID 7 and fpt vtv7hd_vhls.smil)
       if (ch.id === "vtv7" || ch.id.startsWith("vtv7_")) {
-        const filteredUrls = ch.urls.filter((u) => !u.url.includes("vtv7hd_vhls.smil") && u.provider !== "vtvgo");
-        let foundWebview = filteredUrls.some((u) => u.provider === "webview");
-        if (!foundWebview) {
-          filteredUrls.push({
-            url: "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV7_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9",
-            provider: "webview",
-          });
-        }
+        const filteredUrls = ch.urls.filter((u) => 
+          u.provider !== "vtvgo" && 
+          u.url !== "7" &&
+          !u.url.includes("vtv7hd_vhls.smil")
+        );
         return {
           ...ch,
           urls: filteredUrls,
