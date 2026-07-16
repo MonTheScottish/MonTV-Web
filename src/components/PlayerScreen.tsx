@@ -1094,6 +1094,106 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               <span>Danh sách kênh</span>
             </button>
           </div>
+
+          {/* Top Right: Cast & AirPlay buttons */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {airplayAvailable && (
+              <button
+                onClick={triggerAirPlay}
+                title="Phát qua AirPlay"
+                aria-label="Phát qua AirPlay"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  cursor: "pointer",
+                  padding: "10px",
+                  borderRadius: "50%",
+                  width: "44px",
+                  height: "44px",
+                  backgroundColor: "var(--color-control-glass)",
+                  border: "1px solid var(--color-control-border)",
+                  backdropFilter: "blur(12px)",
+                  transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
+                  e.currentTarget.style.borderColor = "var(--color-control-border-active)";
+                  e.currentTarget.style.transform = "scale(1.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
+                  e.currentTarget.style.borderColor = "var(--color-control-border)";
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1" />
+                  <polygon points="12 15 17 21 7 21 12 15" />
+                </svg>
+              </button>
+            )}
+
+            {castAvailable && (
+              <button
+                onClick={handleCastClick}
+                title="Truyền hình ảnh (Cast)"
+                aria-label="Truyền hình ảnh (Cast)"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  cursor: "pointer",
+                  padding: "10px",
+                  borderRadius: "50%",
+                  width: "44px",
+                  height: "44px",
+                  backgroundColor: "var(--color-control-glass)",
+                  border: "1px solid var(--color-control-border)",
+                  backdropFilter: "blur(12px)",
+                  transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
+                  e.currentTarget.style.borderColor = "var(--color-control-border-active)";
+                  e.currentTarget.style.transform = "scale(1.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
+                  e.currentTarget.style.borderColor = "var(--color-control-border)";
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M2 12a10 10 0 0 1 10 10M2 17a5 5 0 0 1 5 5M2 8a14 14 0 0 1 14 14" />
+                  <path d="M2 20h.01" />
+                  <path d="M5 3h15a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6M2 3v2" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Bottom Control Bar */}
@@ -1197,7 +1297,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
             }}
           >
             {/* Left: Source Selector */}
-            <div style={{ minWidth: isMobile ? "100%" : "150px", display: "flex", justifyContent: isMobile ? "center" : "flex-start" }}>
+            <div style={{ flex: isMobile ? "1 0 100%" : "1 1 0px", display: "flex", justifyContent: isMobile ? "center" : "flex-start", minWidth: isMobile ? "auto" : "180px" }}>
               {currentChannel.urls.length > 1 && (
                 <div style={{ position: "relative" }}>
                   <button
@@ -1292,8 +1392,8 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
                 display: "flex",
                 alignItems: "center",
                 gap: isMobile ? "10px" : "20px",
-                flex: 1,
                 justifyContent: "center",
+                flex: isMobile ? "1 0 100%" : "0 0 auto",
               }}
             >
               {/* Previous Channel Button */}
@@ -1419,115 +1519,17 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
               )}
             </div>
 
-            {/* Right: Cast/AirPlay & Volume Control */}
+            {/* Right: Volume Control */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: isMobile ? "center" : "flex-end",
                 gap: "12px",
+                flex: isMobile ? "1 0 100%" : "1 1 0px",
                 minWidth: isMobile ? "auto" : "180px",
               }}
             >
-              {/* Cast & AirPlay buttons */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                {airplayAvailable && (
-                  <button
-                    onClick={triggerAirPlay}
-                    title="Phát qua AirPlay"
-                    aria-label="Phát qua AirPlay"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                      cursor: "pointer",
-                      padding: "10px",
-                      borderRadius: "50%",
-                      width: "44px",
-                      height: "44px",
-                      backgroundColor: "var(--color-control-glass)",
-                      border: "1px solid var(--color-control-border)",
-                      backdropFilter: "blur(12px)",
-                      transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
-                      e.currentTarget.style.borderColor = "var(--color-control-border-active)";
-                      e.currentTarget.style.transform = "scale(1.08)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
-                      e.currentTarget.style.borderColor = "var(--color-control-border)";
-                      e.currentTarget.style.transform = "scale(1)";
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="18"
-                      height="18"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1" />
-                      <polygon points="12 15 17 21 7 21 12 15" />
-                    </svg>
-                  </button>
-                )}
-
-                {castAvailable && (
-                  <button
-                    onClick={handleCastClick}
-                    title="Truyền hình ảnh (Cast)"
-                    aria-label="Truyền hình ảnh (Cast)"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                      cursor: "pointer",
-                      padding: "10px",
-                      borderRadius: "50%",
-                      width: "44px",
-                      height: "44px",
-                      backgroundColor: "var(--color-control-glass)",
-                      border: "1px solid var(--color-control-border)",
-                      backdropFilter: "blur(12px)",
-                      transition: "background-color 0.2s, border-color 0.2s, transform 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--color-control-glass-hover)";
-                      e.currentTarget.style.borderColor = "var(--color-control-border-active)";
-                      e.currentTarget.style.transform = "scale(1.08)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--color-control-glass)";
-                      e.currentTarget.style.borderColor = "var(--color-control-border)";
-                      e.currentTarget.style.transform = "scale(1)";
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="18"
-                      height="18"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M2 12a10 10 0 0 1 10 10M2 17a5 5 0 0 1 5 5M2 8a14 14 0 0 1 14 14" />
-                      <path d="M2 20h.01" />
-                      <path d="M5 3h15a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6M2 3v2" />
-                    </svg>
-                  </button>
-                )}
-              </div>
 
               {/* Volume Control */}
               <div
