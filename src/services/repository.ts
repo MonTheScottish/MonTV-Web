@@ -335,7 +335,9 @@ export class MonTVRepository {
       const blacklisted = this.isSourceBlacklisted(channel.id, u.url) ? -1000 : 0;
       const prov = (u.provider || "hls").toLowerCase();
       let s = 0;
-      if (prov === "webview") {
+      if (prov === "vtvgo") {
+        s = 10;
+      } else if (prov === "webview") {
         if (platform === "ios") {
           // iOS Safari: Shaka iframe (Widevine/ClearKey) fails for most DRM
           // channels (VTV, SCTV, HBO…). Shaka can try FairPlay but depends on
@@ -398,33 +400,33 @@ export class MonTVRepository {
 
   private postProcessChannels(channels: Channel[]): Channel[] {
     const processed = channels.map((ch) => {
-      if (ch.id === "vtv2") {
+      if (ch.id === "vtv2" || ch.id.startsWith("vtv2_")) {
         const filteredUrls = ch.urls.filter((u) => 
           u.provider !== "flow" && 
           !u.url.includes("toiyeuvietnam.dpdns.org") &&
           !u.url.includes("fptplay53.net") &&
           !u.url.includes("play.m3u8?vid=")
         );
-        // Find webview URL or create default
+        filteredUrls.unshift({ url: "2", provider: "vtvgo" });
         let webviewUrl = filteredUrls.find((u) => u.provider === "webview")?.url;
         if (!webviewUrl) {
           webviewUrl = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV2_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9";
-          filteredUrls.unshift({ url: webviewUrl, provider: "webview" });
+          filteredUrls.push({ url: webviewUrl, provider: "webview" });
         }
         return {
           ...ch,
-          streamUrl: webviewUrl,
+          streamUrl: "2",
           urls: filteredUrls,
         };
       }
-      if (ch.id === "vtv3") {
+      if (ch.id === "vtv3" || ch.id.startsWith("vtv3_")) {
         let filteredUrls = ch.urls.filter((u) => 
           u.provider !== "flow" && 
           !u.url.includes("toiyeuvietnam.dpdns.org") &&
           !u.url.includes("fptplay53.net") &&
           !u.url.includes("play.m3u8?vid=")
         );
-        // Find webview URL, fix key, or create default
+        filteredUrls.unshift({ url: "3", provider: "vtvgo" });
         let foundWebview = false;
         filteredUrls = filteredUrls.map((u) => {
           if (u.provider === "webview") {
@@ -439,30 +441,30 @@ export class MonTVRepository {
         });
         if (!foundWebview) {
           const webviewUrl = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV3_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9,2c00d6f2992141b99bee7abc5a9cc687:ec57977de110995b8fc5d42e4ffdbcc9";
-          filteredUrls.unshift({ url: webviewUrl, provider: "webview" });
+          filteredUrls.push({ url: webviewUrl, provider: "webview" });
         }
-        const finalWebviewUrl = filteredUrls.find((u) => u.provider === "webview")?.url || "";
         return {
           ...ch,
-          streamUrl: finalWebviewUrl,
+          streamUrl: "3",
           urls: filteredUrls,
         };
       }
-      if (ch.id === "vtv1") {
+      if (ch.id === "vtv1" || ch.id.startsWith("vtv1_")) {
         const filteredUrls = ch.urls.filter((u) => 
           u.provider !== "flow" && 
           !u.url.includes("toiyeuvietnam.dpdns.org") &&
           !u.url.includes("fptplay53.net") &&
           !u.url.includes("play.m3u8?vid=")
         );
+        filteredUrls.unshift({ url: "1", provider: "vtvgo" });
         let webviewUrl = filteredUrls.find((u) => u.provider === "webview")?.url;
         if (!webviewUrl) {
           webviewUrl = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV1_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9";
-          filteredUrls.unshift({ url: webviewUrl, provider: "webview" });
+          filteredUrls.push({ url: webviewUrl, provider: "webview" });
         }
         return {
           ...ch,
-          streamUrl: webviewUrl,
+          streamUrl: "1",
           urls: filteredUrls,
         };
       }
@@ -921,6 +923,10 @@ export class MonTVRepository {
       };
     }
 
+    if (provider === "vtvgo") {
+      return this.resolveVtvgoStream(url);
+    }
+
     if (provider === "flow") {
       try {
         const proxyUrl = this.getProxyUrl(url);
@@ -985,4 +991,260 @@ export class MonTVRepository {
 
     return null;
   }
+
+  private async resolveVtvgoStream(channelId: string): Promise<ResolvedStream | null> {
+    try {
+      await loadVtvgoWasm();
+      const w = window as any;
+
+      let deviceId = localStorage.getItem("vtvgo_device_id");
+      if (!deviceId) {
+        deviceId = (typeof crypto !== "undefined" && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : "1a25bdd1-b7de-4b29-a428-9d3deed9be46";
+        localStorage.setItem("vtvgo_device_id", deviceId);
+      }
+
+      const deviceName = "Chrome/Windows";
+      const versionCode = 20260603;
+      const platform = 6;
+      const secret = "";
+
+      const apiBase = "https://web-api-vtvgo.vtvdigital.vn";
+      const keyStr = "kLPiBsNsZc3cz1hlf2ALgBpziNnQW23v";
+
+      const ptr = w.OnModule.ccall(
+        "allocOn",
+        "number",
+        ["number", "string"],
+        [0, JSON.stringify({ deviceId })]
+      );
+
+      let token = localStorage.getItem("vtvgo_guest_token");
+
+      if (!token) {
+        const qPayload = {
+          deviceId,
+          deviceName,
+          versionCode,
+          platform,
+          secret
+        };
+        const qStr = Object.values(qPayload).join("&&");
+
+        const guestSignature = w.OnModule.ccall(
+          "signatureA",
+          "string",
+          ["number", "string", "string"],
+          [ptr, qStr, w.a_req]
+        );
+
+        const guestBodyPayload = {
+          deviceId,
+          deviceName,
+          dtId: 1,
+          spId: "1",
+          platform,
+          clientId: "null",
+          signature: guestSignature,
+          versionCode
+        };
+
+        const guestRes = await fetch(`${apiBase}/user/nt/api/v1/auth/enter-guest`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(guestBodyPayload)
+        });
+
+        if (!guestRes.ok) {
+          throw new Error(`Guest registration failed with status ${guestRes.status}`);
+        }
+
+        const guestResJson = await guestRes.json();
+        if (guestResJson.data && guestResJson.data.accessToken) {
+          token = guestResJson.data.accessToken;
+          localStorage.setItem("vtvgo_guest_token", token!);
+        } else {
+          throw new Error("No token returned in guest registration response");
+        }
+      }
+
+      const sourcePayload = { channelId };
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      let sourceIv = "";
+      for (let i = 0; i < 16; i++) {
+        sourceIv += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
+      const encryptedSourcePayload = await encryptAes256Cbc(JSON.stringify(sourcePayload), sourceIv, keyStr);
+      const sourceBody = JSON.stringify({ e: encryptedSourcePayload });
+
+      const sourceSignature = w.OnModule.ccall(
+        "signatureA",
+        "string",
+        ["number", "string", "string"],
+        [ptr, JSON.stringify(sourcePayload), w.a_req]
+      );
+
+      const fetchSource = async (t: string) => {
+        return fetch(`${apiBase}/livechannelsec/api/v2/s-channels/source`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${t}`,
+            "x-encrypt-id": sourceIv,
+            "x-signature": sourceSignature
+          },
+          body: sourceBody
+        });
+      };
+
+      let res = await fetchSource(token!);
+
+      if (res.status === 401) {
+        localStorage.removeItem("vtvgo_guest_token");
+        return this.resolveVtvgoStream(channelId);
+      }
+
+      if (!res.ok) {
+        throw new Error(`Source request failed with status ${res.status}`);
+      }
+
+      const resIv = res.headers.get("x-encrypt-id");
+      if (!resIv) {
+        throw new Error("Missing x-encrypt-id header in source response");
+      }
+
+      const responseJson = await res.json();
+      const ciphertext = responseJson.e;
+
+      const decrypted = await decryptAes256Cbc(ciphertext, resIv, keyStr);
+      const decryptedData = JSON.parse(decrypted);
+
+      if (decryptedData.status !== 0 || !decryptedData.data) {
+        throw new Error(`VTVgo API returned error: ${decryptedData.message}`);
+      }
+
+      const sourceModes = decryptedData.data.sourceModes || [];
+      const defaultMode = sourceModes.find((m: any) => m.id === "default");
+      if (!defaultMode || !defaultMode.multiSource) {
+        throw new Error("Default source mode not found in decrypted stream data");
+      }
+
+      const nonDrmSource = defaultMode.multiSource.find(
+        (s: any) => s.drmInfo && s.drmInfo.drmType === "none"
+      ) || defaultMode.multiSource.find(
+        (s: any) => !s.drmInfo || s.drmInfo.drmType === "none"
+      );
+
+      if (!nonDrmSource || !nonDrmSource.sources || nonDrmSource.sources.length === 0) {
+        throw new Error("No non-DRM sources found in stream data");
+      }
+
+      const streamUrl = nonDrmSource.sources[0].url;
+      return {
+        url: streamUrl,
+        headers: undefined
+      };
+    } catch (e) {
+      console.error("Error in resolveVtvgoStream:", e);
+      return null;
+    }
+  }
 }
+
+let wasmLoadPromise: Promise<void> | null = null;
+
+async function loadVtvgoWasm(): Promise<void> {
+  if (wasmLoadPromise) return wasmLoadPromise;
+
+  wasmLoadPromise = new Promise<void>((resolve, reject) => {
+    const w = window as any;
+    if (w.OnModule && w.OnModule.readyToPlay) {
+      resolve();
+      return;
+    }
+
+    const scriptUrl = "https://web-cache-aws.vtvdigital.vn/assets/file/secret/38PPszYQ_20250527.js";
+    const script = document.createElement("script");
+    script.src = scriptUrl;
+    script.onload = () => {
+      if (typeof w.loadFunction === "function") {
+        w.loadFunction("https://web-cache-aws.vtvdigital.vn/assets/file/secret/")
+          .then(() => {
+            const checkReady = setInterval(() => {
+              if (w.OnModule && w.OnModule.readyToPlay) {
+                clearInterval(checkReady);
+                resolve();
+              }
+            }, 100);
+          })
+          .catch((err: any) => {
+            wasmLoadPromise = null;
+            reject(err);
+          });
+      } else {
+        wasmLoadPromise = null;
+        reject(new Error("loadFunction is not defined on window"));
+      }
+    };
+    script.onerror = (err) => {
+      wasmLoadPromise = null;
+      reject(err);
+    };
+    const container = document.head || document.documentElement || document.body;
+    container.appendChild(script);
+  });
+
+  return wasmLoadPromise;
+}
+
+async function encryptAes256Cbc(plaintext: string, ivStr: string, keyStr: string): Promise<string> {
+  const keyBuf = new TextEncoder().encode(keyStr);
+  const ivBuf = new TextEncoder().encode(ivStr.substring(0, 16));
+  const cryptoKey = await window.crypto.subtle.importKey(
+    "raw",
+    keyBuf,
+    { name: "AES-CBC" },
+    false,
+    ["encrypt"]
+  );
+
+  const plainBytes = new TextEncoder().encode(plaintext);
+  const encryptedBuf = await window.crypto.subtle.encrypt(
+    { name: "AES-CBC", iv: ivBuf },
+    cryptoKey,
+    plainBytes
+  );
+
+  const encryptedBytes = new Uint8Array(encryptedBuf);
+  let binary = "";
+  for (let i = 0; i < encryptedBytes.byteLength; i++) {
+    binary += String.fromCharCode(encryptedBytes[i]);
+  }
+  return btoa(binary);
+}
+
+async function decryptAes256Cbc(ciphertextBase64: string, ivStr: string, keyStr: string): Promise<string> {
+  const keyBuf = new TextEncoder().encode(keyStr);
+  const ivBuf = new TextEncoder().encode(ivStr.substring(0, 16));
+  const cryptoKey = await window.crypto.subtle.importKey(
+    "raw",
+    keyBuf,
+    { name: "AES-CBC" },
+    false,
+    ["decrypt"]
+  );
+
+  const cipherBytes = Uint8Array.from(atob(ciphertextBase64), c => c.charCodeAt(0));
+  const decryptedBuf = await window.crypto.subtle.decrypt(
+    { name: "AES-CBC", iv: ivBuf },
+    cryptoKey,
+    cipherBytes
+  );
+
+  return new TextDecoder().decode(decryptedBuf);
+}
+

@@ -7,7 +7,11 @@ import PlayerScreen from "./components/PlayerScreen";
 import SettingsScreen from "./components/SettingsScreen";
 
 function App() {
-  const repository = useMemo(() => new MonTVRepository(), []);
+  const repository = useMemo(() => {
+    const repo = new MonTVRepository();
+    (window as any).repository = repo;
+    return repo;
+  }, []);
 
   // Apply theme immediately on startup
   useEffect(() => {
