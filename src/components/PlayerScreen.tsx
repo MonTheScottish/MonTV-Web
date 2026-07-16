@@ -606,9 +606,9 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
           setShowControls(true);
           return;
         }
-        console.warn("Playback loading timed out after 10s. Trying next source...");
+        console.warn("Playback loading timed out after 20s. Trying next source...");
         handleStreamFailureRef.current?.("timeout");
-      }, 10000);
+      }, 20000);
     };
 
     startLoadingTimeout();

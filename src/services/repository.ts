@@ -101,6 +101,8 @@ export class MonTVRepository {
 
   constructor() {
     this.cachedUrl = localStorage.getItem(this.KEY_PLAYLIST_URL) || DEFAULT_PLAYLIST_URL;
+    // Pre-initialize VTVgo WebAssembly asynchronously
+    loadVtvgoWasm().catch(err => console.warn("Failed to pre-load VTVgo WASM:", err));
   }
 
   // Proxies URLs to bypass CORS and Cloudflare restrictions
@@ -336,7 +338,7 @@ export class MonTVRepository {
       const prov = (u.provider || "hls").toLowerCase();
       let s = 0;
       if (prov === "vtvgo") {
-        s = platform === "ios" ? 8 : 8;
+        s = platform === "ios" ? 10 : 8;
       } else if (prov === "webview") {
         if (platform === "ios") {
           // iOS Safari: Shaka iframe (Widevine/ClearKey) fails for most DRM
@@ -359,7 +361,7 @@ export class MonTVRepository {
       } else {
         // hls / video: plain m3u8. On iOS Safari, canPlayType for native HLS
         // is true so these play fine when not DRM-encrypted.
-        s = platform === "ios" ? 10 : 2;
+        s = platform === "ios" ? 9 : 2;
       }
       return s + blacklisted;
     };
@@ -1263,7 +1265,7 @@ async function loadVtvgoWasm(): Promise<void> {
       if (checkReady) clearInterval(checkReady);
       wasmLoadPromise = null;
       reject(new Error("VTVgo WebAssembly loading timed out"));
-    }, 5000);
+    }, 15000);
 
     const scriptUrl = "https://web-cache-aws.vtvdigital.vn/assets/file/secret/38PPszYQ_20250527.js";
     const script = document.createElement("script");
