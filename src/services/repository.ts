@@ -400,9 +400,8 @@ export class MonTVRepository {
 
   private postProcessChannels(channels: Channel[]): Channel[] {
     const processed = channels.map((ch) => {
-      // Generic mapper for all VTV channels (VTV1-6, VTV8-9, regional variants, and VTV Cần Thơ / VTV10) using VTVgo
-      // Note: VTV7 is excluded because VTVgo ID 7 broadcasts VTV5 Tây Nam Bộ in real life.
-      const vtvMatch = ch.id.match(/^vtv([1-689]|5-tay-nam-bo|5-tay-nguyen|-can-tho)(_|$)/);
+      // Generic mapper for all VTV channels (VTV1-9, regional variants, and VTV Cần Thơ / VTV10) using VTVgo
+      const vtvMatch = ch.id.match(/^vtv([1-9]|5-tay-nam-bo|5-tay-nguyen|-can-tho)(_|$)/);
       if (vtvMatch) {
         const type = vtvMatch[1];
         if (type === "5-tay-nam-bo") {
@@ -425,10 +424,11 @@ export class MonTVRepository {
         else if (type === "3") vtvgoId = "3";
         else if (type === "4") vtvgoId = "4";
         else if (type === "5") vtvgoId = "5";
-        else if (type === "6" || type === "-can-tho") vtvgoId = "6";
-        else if (type === "8") vtvgoId = "8";
-        else if (type === "9") vtvgoId = "9";
-        else if (type === "5-tay-nguyen") vtvgoId = "10";
+        else if (type === "6") vtvgoId = "13"; // VTV6 is ID 13 on VTVgo
+        else if (type === "7") vtvgoId = "27"; // VTV7 is ID 27 on VTVgo
+        else if (type === "8") vtvgoId = "36"; // VTV8 is ID 36 on VTVgo
+        else if (type === "9") vtvgoId = "39"; // VTV9 is ID 39 on VTVgo
+        else if (type === "-can-tho") vtvgoId = "6"; // VTV10 / VTV Cần Thơ is ID 6 on VTVgo
 
         if (vtvgoId) {
           let filteredUrls = ch.urls.filter((u) => 
@@ -437,6 +437,11 @@ export class MonTVRepository {
             !u.url.includes("fptplay53.net") &&
             !u.url.includes("play.m3u8?vid=")
           );
+          
+          if (vtvgoId === "27") {
+            // Filter out the mislabeled VTV5 TNB stream from VTV7
+            filteredUrls = filteredUrls.filter((u) => !u.url.includes("vtv7hd_vhls.smil"));
+          }
           
           filteredUrls.unshift({ url: vtvgoId, provider: "vtvgo" });
 
@@ -462,7 +467,8 @@ export class MonTVRepository {
             } else if (vtvgoId === "3") {
               fallbackWebview = "https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/VTV3_HD/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9,2c00d6f2992141b99bee7abc5a9cc687:ec57977de110995b8fc5d42e4ffdbcc9";
             } else {
-              const chanUpper = `VTV${vtvgoId === "6" ? "6" : vtvgoId === "10" ? "5_TN" : vtvgoId === "11" ? "5_TNB" : vtvgoId}_HD`;
+              const channelName = vtvgoId === "6" ? "can-tho" : vtvgoId === "13" ? "6" : vtvgoId === "27" ? "7" : vtvgoId === "36" ? "8" : vtvgoId === "39" ? "9" : vtvgoId;
+              const chanUpper = `VTV${channelName === "can-tho" ? "6" : channelName}_HD`;
               fallbackWebview = `https://freem3u.xyz/shaka.html?videoUrl=https://livesct.vtvprime.vn/mean/${chanUpper}/manifest.mpd&keys=d8099c6c4ebc4ab88ce6f694f912e26d:ec57977de110995b8fc5d42e4ffdbcc9`;
             }
             mappedUrls.push({ url: fallbackWebview, provider: "webview" });
@@ -476,18 +482,6 @@ export class MonTVRepository {
         }
       }
 
-      // Explicit handler for VTV7 (filter out VTVgo ID 7 and fpt vtv7hd_vhls.smil)
-      if (ch.id === "vtv7" || ch.id.startsWith("vtv7_")) {
-        const filteredUrls = ch.urls.filter((u) => 
-          u.provider !== "vtvgo" && 
-          u.url !== "7" &&
-          !u.url.includes("vtv7hd_vhls.smil")
-        );
-        return {
-          ...ch,
-          urls: filteredUrls,
-        };
-      }
       if (ch.id.startsWith("boxmovie_")) {
         const workingUrl: ChannelUrl = {
           url: "https://toiyeuvietnam.dpdns.org/OnliveTV/box-movie-1-hd/Free.m3u8",
