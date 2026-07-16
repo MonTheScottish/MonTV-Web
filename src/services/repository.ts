@@ -482,6 +482,72 @@ export class MonTVRepository {
         }
       }
 
+      // Dynamic mapper for SCTV channels using VTVgo
+      const sctvMatch = ch.id.match(/^sctv([0-9]+|phimth)(_|$)/i);
+      if (sctvMatch) {
+        const num = sctvMatch[1].toLowerCase();
+        const sctvgoId = `sctv${num}`;
+        const hasVtvgo = ch.urls.some((u) => u.provider === "vtvgo");
+        if (!hasVtvgo) {
+          const updatedUrls = [{ url: sctvgoId, provider: "vtvgo" }, ...ch.urls];
+          return {
+            ...ch,
+            urls: updatedUrls,
+          };
+        }
+      }
+
+      // Dynamic mapper for VTVcab channels using VTVgo
+      const vtvcabMap: Record<string, string> = {
+        "on-phim-viet": "vtvcab2",
+        "onsports": "vtvcab3",
+        "on-movies": "vtvcab4",
+        "on-e-channel": "vtvcab5",
+        "on-o2tv": "vtvcab7",
+        "on-style-tv": "vtvcab12",
+        "onfootball": "vtvcab16",
+        "on-cine": "vtvcab10",
+        "on-trending-tv": "vtvcab17",
+        "on-music": "vtvcab15",
+        "on-bibi": "vtvcab8",
+        "on-info-tv": "vtvcab9",
+        "onsportsnews": "vtvcab18",
+        "on-vfamily": "vtvcab24",
+        "onsportsplus": "vtvcab6",
+      };
+      
+      const normalizedId = ch.id.replace(/_\d+$/, "").toLowerCase();
+      if (vtvcabMap[normalizedId]) {
+        const vtvcabgoId = vtvcabMap[normalizedId];
+        const hasVtvgo = ch.urls.some((u) => u.provider === "vtvgo");
+        if (!hasVtvgo) {
+          const updatedUrls = [{ url: vtvcabgoId, provider: "vtvgo" }, ...ch.urls];
+          return {
+            ...ch,
+            urls: updatedUrls,
+          };
+        }
+      }
+
+      // Dynamic mapper for essential/local channels using VTVgo
+      const essentialMap: Record<string, string> = {
+        "antv": "89",
+        "qpvn": "103"
+      };
+      for (const prefix in essentialMap) {
+        if (normalizedId.startsWith(prefix)) {
+          const vtvgoId = essentialMap[prefix];
+          const hasVtvgo = ch.urls.some((u) => u.provider === "vtvgo");
+          if (!hasVtvgo) {
+            const updatedUrls = [{ url: vtvgoId, provider: "vtvgo" }, ...ch.urls];
+            return {
+              ...ch,
+              urls: updatedUrls,
+            };
+          }
+        }
+      }
+
       if (ch.id.startsWith("boxmovie_")) {
         const workingUrl: ChannelUrl = {
           url: "https://toiyeuvietnam.dpdns.org/OnliveTV/box-movie-1-hd/Free.m3u8",
