@@ -336,7 +336,7 @@ export class MonTVRepository {
       const prov = (u.provider || "hls").toLowerCase();
       let s = 0;
       if (prov === "vtvgo") {
-        s = platform === "ios" ? 10 : 8;
+        s = platform === "ios" ? 8 : 8;
       } else if (prov === "webview") {
         if (platform === "ios") {
           // iOS Safari: Shaka iframe (Widevine/ClearKey) fails for most DRM
@@ -359,7 +359,7 @@ export class MonTVRepository {
       } else {
         // hls / video: plain m3u8. On iOS Safari, canPlayType for native HLS
         // is true so these play fine when not DRM-encrypted.
-        s = platform === "ios" ? 5 : 2;
+        s = platform === "ios" ? 10 : 2;
       }
       return s + blacklisted;
     };
@@ -1267,6 +1267,13 @@ async function loadVtvgoWasm(): Promise<void> {
       return;
     }
 
+    let checkReady: any = null;
+    const timeout = setTimeout(() => {
+      if (checkReady) clearInterval(checkReady);
+      wasmLoadPromise = null;
+      reject(new Error("VTVgo WebAssembly loading timed out"));
+    }, 5000);
+
     const scriptUrl = "https://web-cache-aws.vtvdigital.vn/assets/file/secret/38PPszYQ_20250527.js";
     const script = document.createElement("script");
     script.src = scriptUrl;
@@ -1274,23 +1281,27 @@ async function loadVtvgoWasm(): Promise<void> {
       if (typeof w.loadFunction === "function") {
         w.loadFunction("https://web-cache-aws.vtvdigital.vn/assets/file/secret/")
           .then(() => {
-            const checkReady = setInterval(() => {
+            checkReady = setInterval(() => {
               if (w.OnModule && w.OnModule.readyToPlay) {
                 clearInterval(checkReady);
+                clearTimeout(timeout);
                 resolve();
               }
             }, 100);
           })
           .catch((err: any) => {
+            clearTimeout(timeout);
             wasmLoadPromise = null;
             reject(err);
           });
       } else {
+        clearTimeout(timeout);
         wasmLoadPromise = null;
         reject(new Error("loadFunction is not defined on window"));
       }
     };
     script.onerror = (err) => {
+      clearTimeout(timeout);
       wasmLoadPromise = null;
       reject(err);
     };
