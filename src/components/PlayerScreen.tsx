@@ -101,6 +101,27 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
     const touch = e.touches[0];
     const x = touch.clientX;
     const y = touch.clientY;
+
+    // Restrict swipe gestures to the video content region (middle of the screen height)
+    // and ignore touches on buttons, inputs, links, or drawers
+    const screenHeight = window.innerHeight;
+    if (y < screenHeight * 0.12 || y > screenHeight * 0.82) {
+      return;
+    }
+
+    const target = e.target as HTMLElement;
+    if (
+      target.closest("button") ||
+      target.closest("input") ||
+      target.closest("select") ||
+      target.closest("a") ||
+      target.closest("[role='button']") ||
+      target.closest(".channel-drawer") ||
+      target.closest(".glass-panel")
+    ) {
+      return;
+    }
+
     const side = x < window.innerWidth / 2 ? "left" : "right";
     const startVal = side === "left" ? brightness : volume;
     touchStartRef.current = { x, y, side, startVal };
@@ -1721,6 +1742,7 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
 
       {/* Channel List Drawer */}
       <div
+        className="channel-drawer"
         style={{
           position: "absolute",
           top: 0,
