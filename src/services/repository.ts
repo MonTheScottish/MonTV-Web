@@ -433,14 +433,34 @@ export class MonTVRepository {
         if (vtvgoId) {
           let filteredUrls = ch.urls.filter((u) => 
             u.provider !== "flow" && 
-            !u.url.includes("toiyeuvietnam.dpdns.org") &&
-            !u.url.includes("fptplay53.net") &&
-            !u.url.includes("play.m3u8?vid=")
+            !u.url.includes("toiyeuvietnam.dpdns.org")
           );
           
           if (vtvgoId === "27") {
             // Filter out the mislabeled VTV5 TNB stream from VTV7
             filteredUrls = filteredUrls.filter((u) => !u.url.includes("vtv7hd_vhls.smil"));
+          }
+          
+          // Explicitly ensure working direct HLS streams are added for VTV1, VTV2, VTV3
+          if (vtvgoId === "1") {
+            const workingHls = "https://live-a.fptplay53.net/live/media/vtv1/live247-hls-avc/index.m3u8";
+            if (!filteredUrls.some((u) => u.url === workingHls)) {
+              filteredUrls.push({ url: workingHls, provider: "hls" });
+            }
+          } else if (vtvgoId === "2") {
+            const workingHls1 = "https://live-a.fptplay53.net/fnxch2/vtv2hd_abr.smil/chunklist.m3u8";
+            const workingHls2 = "https://freem3u.xyz/api/live/play.m3u8?vid=3";
+            if (!filteredUrls.some((u) => u.url === workingHls1)) {
+              filteredUrls.push({ url: workingHls1, provider: "hls" });
+            }
+            if (!filteredUrls.some((u) => u.url === workingHls2)) {
+              filteredUrls.push({ url: workingHls2, provider: "hls" });
+            }
+          } else if (vtvgoId === "3") {
+            const workingHls = "https://freem3u.xyz/api/live/play.m3u8?vid=4";
+            if (!filteredUrls.some((u) => u.url === workingHls)) {
+              filteredUrls.push({ url: workingHls, provider: "hls" });
+            }
           }
           
           filteredUrls.unshift({ url: vtvgoId, provider: "vtvgo" });
