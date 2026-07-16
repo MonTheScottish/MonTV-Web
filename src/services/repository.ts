@@ -336,7 +336,7 @@ export class MonTVRepository {
       const prov = (u.provider || "hls").toLowerCase();
       let s = 0;
       if (prov === "vtvgo") {
-        s = 10;
+        s = platform === "ios" ? 10 : 8;
       } else if (prov === "webview") {
         if (platform === "ios") {
           // iOS Safari: Shaka iframe (Widevine/ClearKey) fails for most DRM
@@ -344,11 +344,11 @@ export class MonTVRepository {
           // upstream manifest. Low score — user confirmed flow sources work.
           s = 1;
         } else if (platform === "androidtv" || platform === "tizen" || platform === "webos") {
-          s = 5; // Smart TV: Shaka handles DRM well
+          s = 10; // Smart TV: Shaka handles DRM well
         } else if (platform === "android") {
-          s = 5; // Android: Shaka Widevine works
+          s = 10; // Android: Shaka Widevine works
         } else {
-          s = 4; // Desktop: Shaka works
+          s = 10; // Desktop: Shaka works
         }
       } else if (prov === "flow") {
         // flow → resolves to m3u8 via JSON endpoint. Safari native HLS plays
@@ -418,12 +418,28 @@ export class MonTVRepository {
         else if (type === "5-tay-nam-bo") vtvgoId = "11";
 
         if (vtvgoId) {
-          const filteredUrls = ch.urls.filter((u) => 
+          let filteredUrls = ch.urls.filter((u) => 
             u.provider !== "flow" && 
             !u.url.includes("toiyeuvietnam.dpdns.org") &&
             !u.url.includes("fptplay53.net") &&
             !u.url.includes("play.m3u8?vid=")
           );
+          
+          if (type === "7") {
+            // Filter out the mislabeled VTV5 TNB stream from VTV7
+            filteredUrls = filteredUrls.filter((u) => !u.url.includes("vtv7hd_vhls.smil"));
+          }
+          
+          if (type === "5-tay-nam-bo") {
+            // Add the vtv7hd_vhls.smil URL to VTV5 TNB if it is not already present
+            const hasVtv7Stream = filteredUrls.some((u) => u.url.includes("vtv7hd_vhls.smil"));
+            if (!hasVtv7Stream) {
+              filteredUrls.push({
+                url: "https://live.fptplay53.net/fnxhd1/vtv7hd_vhls.smil/chunklist.m3u8",
+                provider: "hls",
+              });
+            }
+          }
           
           filteredUrls.unshift({ url: vtvgoId, provider: "vtvgo" });
 
