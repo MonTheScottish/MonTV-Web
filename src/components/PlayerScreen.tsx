@@ -1006,6 +1006,20 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
             >
               Tải lại trang
             </button>
+            <button
+              onClick={() => onExit(currentChannel)}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "rgba(255,255,255,0.1)",
+                border: "none",
+                borderRadius: "6px",
+                color: "white",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Về trang chủ
+            </button>
           </div>
         </div>
       )}
