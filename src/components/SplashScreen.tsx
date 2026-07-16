@@ -90,12 +90,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         gap: "24px",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <img src="/logo.png" alt="MonTV Logo" className="pulse-badge" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "14px" }} />
-        <h1 style={{ fontSize: "36px", fontWeight: 700, letterSpacing: "1px" }}>
-          Mon<span style={{ color: "var(--color-accent-blue)" }}>TV</span>
-        </h1>
-      </div>
+      <img src="/logo.png" alt="MonTV Logo" className="pulse-badge" style={{ width: "128px", height: "128px", objectFit: "contain", borderRadius: "28px" }} />
 
       {error ? (
         <div
