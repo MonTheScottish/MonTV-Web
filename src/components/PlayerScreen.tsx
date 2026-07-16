@@ -870,10 +870,30 @@ export const PlayerScreen: React.FC<PlayerScreenProps> = ({
   };
 
   const getSourceDisplayName = (urlObj: any, index: number) => {
-    if (urlObj.provider === "backup_public") return `Nguồn công cộng ${index + 1}`;
-    if (urlObj.provider === "flow") return `Nguồn luồng chính ${index + 1}`;
-    if (urlObj.provider === "webview") return `Nguồn webview ${index + 1}`;
-    return `Nguồn mặc định ${index + 1}`;
+    const urlStr = (urlObj.url || "").toLowerCase();
+    const provider = (urlObj.provider || "").toLowerCase();
+
+    let name = "";
+    if (provider === "vtvgo" || urlStr.includes("vtvgo")) {
+      name = "VTVGo";
+    } else if (provider === "webview" || urlStr.includes("shaka.html") || urlStr.includes("manifest.mpd")) {
+      if (urlStr.includes("vtvprime")) name = "VTVPrime DRM";
+      else if (urlStr.includes("sctv")) name = "SCTV DRM";
+      else if (urlStr.includes("tv360")) name = "TV360 DRM";
+      else if (urlStr.includes("vieon")) name = "VieON DRM";
+      else if (urlStr.includes("vtvcab")) name = "VTVcab DRM";
+      else name = "Webview DRM";
+    } else {
+      if (urlStr.includes("fptplay") || urlStr.includes("fpt")) name = "FPT Play";
+      else if (urlStr.includes("toiyeuvietnam")) name = "TYVN";
+      else if (urlStr.includes("freem3u")) name = "Dự phòng";
+      else if (provider === "flow") name = "Luồng chính";
+      else if (provider === "backup_public") name = "Công cộng";
+      else if (provider === "hls") name = "HLS";
+      else name = `Dự phòng ${index + 1}`;
+    }
+
+    return `Nguồn ${name}`;
   };
 
   return (
