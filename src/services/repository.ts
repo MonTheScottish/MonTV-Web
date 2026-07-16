@@ -405,6 +405,13 @@ export class MonTVRepository {
       const vtvMatch = ch.id.match(/^vtv([1-689]|5-tay-nam-bo|5-tay-nguyen|-can-tho)(_|$)/);
       if (vtvMatch) {
         const type = vtvMatch[1];
+        if (type === "5-tay-nam-bo") {
+          return {
+            ...ch,
+            streamUrl: "7",
+            urls: [{ url: "7", provider: "vtvgo" }],
+          };
+        }
         let vtvgoId = "";
         if (type === "1") vtvgoId = "1";
         else if (type === "2") vtvgoId = "2";
@@ -415,7 +422,6 @@ export class MonTVRepository {
         else if (type === "8") vtvgoId = "8";
         else if (type === "9") vtvgoId = "9";
         else if (type === "5-tay-nguyen") vtvgoId = "10";
-        else if (type === "5-tay-nam-bo") vtvgoId = "11";
 
         if (vtvgoId) {
           let filteredUrls = ch.urls.filter((u) => 
@@ -424,25 +430,6 @@ export class MonTVRepository {
             !u.url.includes("fptplay53.net") &&
             !u.url.includes("play.m3u8?vid=")
           );
-          
-          if (type === "5-tay-nam-bo") {
-            // Add the vtv7hd_vhls.smil URL to VTV5 TNB if it is not already present
-            const hasVtv7Stream = filteredUrls.some((u) => u.url.includes("vtv7hd_vhls.smil"));
-            if (!hasVtv7Stream) {
-              filteredUrls.push({
-                url: "https://live.fptplay53.net/fnxhd1/vtv7hd_vhls.smil/chunklist.m3u8",
-                provider: "hls",
-              });
-            }
-            // Add VTVgo ID 7 as a backup source for VTV5 TNB (since it streams VTV5 TNB in real life)
-            const hasVtvgo7 = filteredUrls.some((u) => u.provider === "vtvgo" && u.url === "7");
-            if (!hasVtvgo7) {
-              filteredUrls.push({
-                url: "7",
-                provider: "vtvgo",
-              });
-            }
-          }
           
           filteredUrls.unshift({ url: vtvgoId, provider: "vtvgo" });
 
