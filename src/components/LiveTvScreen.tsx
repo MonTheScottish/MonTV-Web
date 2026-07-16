@@ -519,7 +519,7 @@ export const LiveTvScreen: React.FC<LiveTvScreenProps> = ({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <img src="/logo.png" alt="MonTV Logo" style={{ width: "32px", height: "32px", objectFit: "contain", borderRadius: "8px" }} />
+          <img src="/logo.png" alt="MonTV Logo" style={{ width: "32px", height: "32px", objectFit: "contain" }} />
           <span style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "0.5px" }}>
             Mon<span style={{ color: "var(--color-accent-blue)" }}>TV</span>
           </span>
